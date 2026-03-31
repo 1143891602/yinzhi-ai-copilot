@@ -9,11 +9,15 @@ import {
   Music4,
   GraduationCap,
   Users,
+  BookOpen,
+  FolderOpen,
 } from 'lucide-react'
 
 const menu = [
   { name: '概览', icon: LayoutDashboard, to: '/' },
   { name: '教案生成', icon: FileText, to: '/lesson-plan' },
+  { name: '我的教案库', icon: FolderOpen, to: '/my-lessons' },
+  { name: '大课包生成', icon: BookOpen, to: '/course-package' },
   { name: '教研体系', icon: Library, to: '/teaching-research' },
   { name: '家校沟通', icon: MessageSquare, to: '/communication' },
   { name: '学生管理', icon: Users, to: '/students' },

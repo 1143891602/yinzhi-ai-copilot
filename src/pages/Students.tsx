@@ -1,6 +1,17 @@
-import { useState } from 'react'
-import { Search, Plus, ChevronRight, Music, Award, Calendar, Phone } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Search, Plus, ChevronRight, Music, Award, Calendar, Phone, Tag, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+const TAGS_KEY = 'yinzhi_student_tags'
+function getTagsMap(): Record<number, string[]> {
+  try { return JSON.parse(localStorage.getItem(TAGS_KEY) || '{}') } catch { return {} }
+}
+function saveTagsMap(map: Record<number, string[]>) {
+  localStorage.setItem(TAGS_KEY, JSON.stringify(map))
+}
+
+const PRESET_TAGS = ['节奏感强', '音准待提升', '识谱快', '练习认真', '表演欲强', '注意力集中', '手指灵活', '乐感好']
 
 type Student = {
   id: number
@@ -36,9 +47,28 @@ const instrColors: Record<string, string> = {
 }
 
 export default function Students() {
+  const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Student | null>(null)
   const [filter, setFilter] = useState('全部')
+  const [tagsMap, setTagsMap] = useState<Record<number, string[]>>(getTagsMap)
+  const [tagInput, setTagInput] = useState('')
+
+  useEffect(() => { saveTagsMap(tagsMap) }, [tagsMap])
+
+  function addTag(studentId: number, tag: string) {
+    if (!tag.trim()) return
+    setTagsMap(prev => {
+      const curr = prev[studentId] || []
+      if (curr.includes(tag)) return prev
+      return { ...prev, [studentId]: [...curr, tag] }
+    })
+    setTagInput('')
+  }
+
+  function removeTag(studentId: number, tag: string) {
+    setTagsMap(prev => ({ ...prev, [studentId]: (prev[studentId] || []).filter(t => t !== tag) }))
+  }
 
   const filters = ['全部', '钢琴', '声乐', '古筝', '小提琴']
   const filtered = students.filter((s) => {
@@ -204,11 +234,57 @@ export default function Students() {
               </div>
             </div>
 
+            {/* 表现标签 */}
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                <Tag size={12} /> 表现标签
+              </h4>
+              <div className="flex flex-wrap gap-1.5">
+                {(tagsMap[selected.id] || []).map(tag => (
+                  <span key={tag} className="flex items-center gap-1 text-xs font-semibold px-2.5 py-1 bg-indigo-50 text-indigo-700 rounded-full">
+                    {tag}
+                    <button onClick={() => removeTag(selected.id, tag)} className="hover:text-red-500 transition-colors">
+                      <X size={10} />
+                    </button>
+                  </span>
+                ))}
+                {(tagsMap[selected.id] || []).length === 0 && (
+                  <span className="text-xs text-slate-300">暂无标签</span>
+                )}
+              </div>
+              {/* 预设标签 */}
+              <div className="flex flex-wrap gap-1">
+                {PRESET_TAGS.filter(t => !(tagsMap[selected.id] || []).includes(t)).slice(0, 4).map(tag => (
+                  <button key={tag} onClick={() => addTag(selected.id, tag)}
+                    className="text-xs px-2 py-1 bg-slate-50 text-slate-500 rounded-lg border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 transition-all">
+                    + {tag}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  value={tagInput}
+                  onChange={e => setTagInput(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addTag(selected.id, tagInput)}
+                  placeholder="自定义标签..."
+                  className="flex-1 text-xs px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20"
+                />
+                <button onClick={() => addTag(selected.id, tagInput)}
+                  className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-all">
+                  添加
+                </button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 gap-2">
-              <button className="py-2.5 text-xs font-bold text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-all">
+              <button
+                onClick={() => navigate('/lesson-plan')}
+                className="py-2.5 text-xs font-bold text-indigo-600 bg-indigo-50 rounded-xl hover:bg-indigo-100 transition-all">
                 生成教案
               </button>
-              <button className="py-2.5 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-all">
+              <button
+                onClick={() => navigate('/communication')}
+                className="py-2.5 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-all">
                 家校沟通
               </button>
             </div>

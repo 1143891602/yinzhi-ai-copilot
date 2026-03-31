@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { FileText, Upload, Trash2, Search, CheckCircle2, Clock, BookOpen } from 'lucide-react'
+import { FileText, Upload, Trash2, Search, CheckCircle2, Clock, BookOpen, AlertTriangle, TrendingUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Doc = { id: number; name: string; type: string; size: string; status: 'ready' | 'processing'; date: string }
@@ -80,6 +80,39 @@ export default function TeachingResearch() {
                 </p>
               </div>
             </div>
+          </div>
+
+          {/* 知识库健康度 */}
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <TrendingUp size={15} className="text-emerald-500" /> 知识库健康度
+            </h3>
+            {[
+              { name: '钢琴教研库', score: 85, files: 2, warn: false },
+              { name: '声乐教研库', score: 60, files: 1, warn: true },
+              { name: '乐理库', score: 40, files: 1, warn: true },
+            ].map(lib => (
+              <div key={lib.name}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-semibold text-slate-600">{lib.name}</span>
+                  <div className="flex items-center gap-1.5">
+                    {lib.warn && <AlertTriangle size={11} className="text-amber-400" />}
+                    <span className={`text-xs font-bold ${lib.score >= 80 ? 'text-emerald-600' : lib.score >= 60 ? 'text-amber-500' : 'text-red-500'}`}>
+                      {lib.score}分
+                    </span>
+                  </div>
+                </div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all ${lib.score >= 80 ? 'bg-emerald-500' : lib.score >= 60 ? 'bg-amber-400' : 'bg-red-400'}`}
+                    style={{ width: `${lib.score}%` }}
+                  />
+                </div>
+                {lib.warn && (
+                  <p className="text-xs text-amber-500 mt-1">建议补充更多资料以提升质量</p>
+                )}
+              </div>
+            ))}
           </div>
 
           <div className="bg-indigo-600 rounded-2xl p-5 text-white">

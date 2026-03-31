@@ -7,6 +7,8 @@ import TeachingResearch from './pages/TeachingResearch'
 import Communication from './pages/Communication'
 import Settings from './pages/Settings'
 import Students from './pages/Students'
+import CoursePackage from './pages/CoursePackage'
+import MyLessons from './pages/MyLessons'
 
 export default function App() {
   return (
@@ -22,6 +24,8 @@ export default function App() {
             <Route path="/communication" element={<Communication />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/students" element={<Students />} />
+            <Route path="/course-package" element={<CoursePackage />} />
+            <Route path="/my-lessons" element={<MyLessons />} />
           </Routes>
         </main>
       </div>

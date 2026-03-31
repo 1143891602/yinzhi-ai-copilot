@@ -6,10 +6,11 @@ import Underline from '@tiptap/extension-underline'
 import Highlight from '@tiptap/extension-highlight'
 import {
   Bold, Italic, List, ListOrdered, Heading1, Heading2,
-  Sparkles, Save, Download, Send, History, Settings2, GraduationCap, AlertCircle, Loader2
+  Sparkles, Save, Download, Send, History, Settings2, GraduationCap, AlertCircle, Loader2, CheckCircle
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { streamChat } from '@/lib/ai'
+import { saveLesson } from '@/lib/lessonStorage'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -75,6 +76,7 @@ export default function LessonPlan() {
   const [error, setError] = useState('')
   const [followUp, setFollowUp] = useState('')
   const [exporting, setExporting] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [subject, setSubject] = useState('莫扎特奏鸣曲 K.545')
   const [instrument, setInstrument] = useState('钢琴 (Piano)')
   const [level, setLevel] = useState('中级 (4-6 级)')
@@ -197,8 +199,22 @@ export default function LessonPlan() {
           <p className="mt-1 text-slate-500 text-sm">配置课程信息，AI 将实时生成专业教学方案。</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex items-center gap-2 px-3 py-2 text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 text-sm font-medium">
-            <History size={15} /> 历史版本
+          <button
+            onClick={() => {
+              if (phase !== 'done') return
+              saveLesson({ title: subject, subject: instrument.split(' ')[0], level, duration, content: rawRef.current })
+              setSaved(true)
+              setTimeout(() => setSaved(false), 2000)
+            }}
+            disabled={phase !== 'done'}
+            className={cn(
+              'flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium transition-all border',
+              phase !== 'done' ? 'text-slate-300 border-slate-100 cursor-not-allowed' :
+              saved ? 'text-emerald-600 bg-emerald-50 border-emerald-200' : 'text-slate-600 bg-white border-slate-200 hover:bg-slate-50'
+            )}
+          >
+            {saved ? <CheckCircle size={15} /> : <Save size={15} />}
+            {saved ? '已保存' : '保存教案'}
           </button>
           <button
             onClick={handleExport}
