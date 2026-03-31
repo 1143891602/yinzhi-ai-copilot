@@ -1,26 +1,45 @@
-import { useState } from 'react'
-import { Sparkles, Copy, Check, RefreshCw } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { Sparkles, Copy, Check, RefreshCw, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { streamChat } from '@/lib/ai'
-
-const students = [
-  { id: 1, name: '王小明', instrument: '钢琴', level: '4 级' },
-  { id: 2, name: '李佳琪', instrument: '钢琴', level: '2 级' },
-  { id: 3, name: '张子涵', instrument: '声乐', level: '考级班' },
-]
-
+import { STUDENTS, getStudentTags } from '@/lib/studentsData'
 
 export default function Communication() {
-  const [selected, setSelected] = useState<typeof students[0] | null>(null)
+  const [searchParams] = useSearchParams()
+  const [selected, setSelected] = useState<typeof STUDENTS[0] | null>(null)
   const [keywords, setKeywords] = useState('')
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState('')
   const [copied, setCopied] = useState(false)
+  const [fromStudent, setFromStudent] = useState(false)
+
+  useEffect(() => {
+    const studentId = searchParams.get('studentId')
+    const kw = searchParams.get('keywords')
+    if (studentId) {
+      const found = STUDENTS.find(s => s.id === Number(studentId))
+      if (found) {
+        setSelected(found)
+        setFromStudent(true)
+        // 优先用 URL 里的 keywords（来自标签），没有则读标签
+        if (kw) {
+          setKeywords(decodeURIComponent(kw))
+        } else {
+          const tags = getStudentTags(found.id)
+          if (tags.length) setKeywords(tags.join('、'))
+        }
+      }
+    }
+  }, [])
 
   const generate = async () => {
     if (!selected) return
     setGenerating(true)
     setResult('')
+
+    const tags = getStudentTags(selected.id)
+    const tagLine = tags.length ? `\n学生特点标签：${tags.join('、')}` : ''
 
     const prompt = `你是一名温情、专业的音乐教师助手。
 请根据以下信息，生成一段发给家长的课后反馈文案。
@@ -28,7 +47,7 @@ export default function Communication() {
 学生姓名：${selected.name}
 学习乐器：${selected.instrument}
 当前级别：${selected.level}
-本次课堂关键词：${keywords || '上课认真，有进步'}
+本次课堂关键词：${keywords || '上课认真，有进步'}${tagLine}
 
 要求：
 - 语气温情、鼓励、专业
@@ -59,9 +78,17 @@ export default function Communication() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">智能家校沟通</h1>
-        <p className="mt-1 text-slate-500 text-sm">输入简单关键词，AI 自动生成专业、温情的课后反馈文案，一键复制发送给家长。</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">智能家校沟通</h1>
+          <p className="mt-1 text-slate-500 text-sm">输入简单关键词，AI 自动生成专业、温情的课后反馈文案，一键复制发送给家长。</p>
+        </div>
+        {fromStudent && selected && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-700">
+            <Users size={13} />
+            <span>已从学生档案导入：<strong>{selected.name}</strong> 的表现标签</span>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -70,11 +97,16 @@ export default function Communication() {
           {/* Step 1 选学生 */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
             <p className="text-xs font-bold text-slate-500">STEP 1 · 选择学生</p>
-            <div className="space-y-2">
-              {students.map((s) => (
+            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+              {STUDENTS.filter(s => s.status === 'active').map((s) => (
                 <div
                   key={s.id}
-                  onClick={() => setSelected(s)}
+                  onClick={() => {
+                    setSelected(s)
+                    setFromStudent(false)
+                    const tags = getStudentTags(s.id)
+                    if (tags.length && !keywords) setKeywords(tags.join('、'))
+                  }}
                   className={cn(
                     'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all',
                     selected?.id === s.id
@@ -92,7 +124,12 @@ export default function Communication() {
                     <p className="text-sm font-bold text-slate-800">{s.name}</p>
                     <p className="text-xs text-slate-400">{s.instrument} · {s.level}</p>
                   </div>
-                  <Check size={16} className={cn('text-indigo-600 transition-all', selected?.id === s.id ? 'opacity-100' : 'opacity-0')} />
+                  {getStudentTags(s.id).length > 0 && (
+                    <span className="text-xs text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full shrink-0">
+                      {getStudentTags(s.id).length} 个标签
+                    </span>
+                  )}
+                  <Check size={16} className={cn('text-indigo-600 transition-all shrink-0', selected?.id === s.id ? 'opacity-100' : 'opacity-0')} />
                 </div>
               ))}
             </div>
@@ -164,7 +201,7 @@ export default function Communication() {
                   <p className="text-xs mt-1 leading-relaxed">选择学生并输入关键词，AI 将在此生成温情专业的家校沟通文案。</p>
                 </div>
               )}
-              {generating && (
+              {generating && !result && (
                 <div className="space-y-3 animate-pulse">
                   <div className="h-4 bg-white/10 rounded-full w-3/4" />
                   <div className="h-4 bg-white/10 rounded-full w-1/2" />
@@ -174,14 +211,22 @@ export default function Communication() {
                   <div className="h-4 bg-white/10 rounded-full w-4/5" />
                 </div>
               )}
-              {result && !generating && (
-                <pre className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-sans">{result}</pre>
+              {result && (
+                <pre className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-sans">
+                  {result}
+                  {generating && <span className="inline-block w-0.5 h-4 bg-indigo-400 animate-pulse ml-0.5 align-middle" />}
+                </pre>
               )}
             </div>
 
             <div className="mt-4 flex items-center justify-between p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
               <span className="text-xs text-indigo-300">💝 以温情、鼓励、专业语气生成</span>
-              <button className="text-xs font-bold text-indigo-400 hover:text-indigo-200">更换语气</button>
+              <button
+                onClick={() => { setResult(''); setKeywords('') }}
+                className="text-xs font-bold text-indigo-400 hover:text-indigo-200 transition-all"
+              >
+                重置
+              </button>
             </div>
           </div>
         </div>

@@ -1,18 +1,11 @@
-import { Link } from 'react-router-dom'
-import {
-  FilePlus, Users, TrendingUp, ArrowRight, Plus, Zap,
-} from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { FilePlus, Users, TrendingUp, ArrowRight, Plus, Zap } from 'lucide-react'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar
 } from 'recharts'
-
-const stats = [
-  { name: '本月生成教案', value: '128', change: '+12.5%', up: true, icon: FilePlus, iconColor: 'text-blue-600', bg: 'bg-blue-50' },
-  { name: '服务机构数', value: '45', change: '+3 家', up: true, icon: Users, iconColor: 'text-purple-600', bg: 'bg-purple-50' },
-  { name: '在读学生总数', value: '312', change: '+18 人', up: true, icon: Users, iconColor: 'text-emerald-600', bg: 'bg-emerald-50' },
-  { name: '效率综合提升', value: '42%', change: '↑ 5% vs 上周', up: true, icon: TrendingUp, iconColor: 'text-orange-600', bg: 'bg-orange-50' },
-]
+import { getLessons } from '@/lib/lessonStorage'
+import { STUDENTS } from '@/lib/studentsData'
 
 const areaData = [
   { name: '1月', 教案数: 52 },
@@ -31,14 +24,47 @@ const barData = [
   { name: '吉他', 课程数: 9 },
 ]
 
-const activities = [
-  { id: 1, title: '《莫扎特奏鸣曲 K.545》进阶教案已生成', time: '10 分钟前', user: '李', color: 'bg-blue-500' },
-  { id: 2, title: '新增家校回访：王小明 5 级钢琴辅导方案', time: '2 小时前', user: '张', color: 'bg-purple-500' },
-  { id: 3, title: '教研库更新：现代少儿声乐发声练习曲', time: '5 小时前', user: '系', color: 'bg-slate-400' },
-  { id: 4, title: '钢琴基础理论 · 春季考级专项备考教案', time: '昨天', user: '王', color: 'bg-emerald-500' },
-]
+function formatAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return '刚刚'
+  if (mins < 60) return `${mins} 分钟前`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours} 小时前`
+  return `${Math.floor(hours / 24)} 天前`
+}
+
+const avatarColors = ['bg-blue-500', 'bg-purple-500', 'bg-emerald-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500']
 
 export default function Dashboard() {
+  const navigate = useNavigate()
+  const lessons = getLessons()
+  const activeStudents = STUDENTS.filter(s => s.status === 'active').length
+
+  const stats = [
+    { name: '已保存教案数', value: String(lessons.length || 0), change: lessons.length > 0 ? `最近：${formatAgo(lessons[0]?.createdAt)}` : '暂无教案', up: true, icon: FilePlus, iconColor: 'text-blue-600', bg: 'bg-blue-50' },
+    { name: '在读学生总数', value: String(activeStudents), change: `共 ${STUDENTS.length} 人`, up: true, icon: Users, iconColor: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { name: '服务机构数', value: '45', change: '+3 家', up: true, icon: Users, iconColor: 'text-purple-600', bg: 'bg-purple-50' },
+    { name: '效率综合提升', value: '42%', change: '↑ 5% vs 上周', up: true, icon: TrendingUp, iconColor: 'text-orange-600', bg: 'bg-orange-50' },
+  ]
+
+  // 最近动态：优先显示真实教案记录，不足时补占位
+  const recentActivities = lessons.slice(0, 4).map((l, i) => ({
+    id: l.id,
+    title: `《${l.title}》${l.subject}教案已保存`,
+    time: formatAgo(l.createdAt),
+    user: l.subject[0] || '案',
+    color: avatarColors[i % avatarColors.length],
+    lessonId: l.id,
+  }))
+
+  const placeholders = [
+    { id: 'p1', title: '教研库更新：现代少儿声乐发声练习曲', time: '昨天', user: '系', color: 'bg-slate-400', lessonId: null },
+    { id: 'p2', title: '新增家校回访：王小明 5 级钢琴辅导方案', time: '2 天前', user: '张', color: 'bg-purple-500', lessonId: null },
+  ]
+
+  const activities = [...recentActivities, ...placeholders].slice(0, 4)
+
   return (
     <div className="max-w-6xl mx-auto space-y-7">
       {/* 顶部 */}
@@ -46,7 +72,11 @@ export default function Dashboard() {
         <div>
           <p className="text-xs font-semibold text-indigo-500 mb-1 tracking-widest uppercase">音智 AI 教研中心</p>
           <h1 className="text-2xl font-bold text-slate-900">下午好，音智教研组 👋</h1>
-          <p className="mt-1 text-slate-500 text-sm">今天有 4 个教案生成任务待处理</p>
+          <p className="mt-1 text-slate-500 text-sm">
+            {lessons.length > 0
+              ? `教案库共 ${lessons.length} 份，${activeStudents} 位学生在读`
+              : `${activeStudents} 位学生在读，还没有保存过教案`}
+          </p>
         </div>
         <Link
           to="/lesson-plan"
@@ -64,7 +94,7 @@ export default function Dashboard() {
               <div className={`p-2.5 rounded-xl ${s.bg} group-hover:scale-110 transition-transform`}>
                 <s.icon size={18} className={s.iconColor} />
               </div>
-              <span className={`text-xs font-bold px-2 py-1 rounded-full ${s.up ? 'text-emerald-600 bg-emerald-50' : 'text-red-500 bg-red-50'}`}>
+              <span className="text-xs font-bold px-2 py-1 rounded-full text-emerald-600 bg-emerald-50">
                 {s.change}
               </span>
             </div>
@@ -76,7 +106,6 @@ export default function Dashboard() {
 
       {/* 图表区 */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* 教案生成趋势 */}
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
           <div className="flex items-center justify-between mb-5">
             <div>
@@ -96,16 +125,12 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-              <Tooltip
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: 12 }}
-                cursor={{ stroke: '#e0e7ff', strokeWidth: 2 }}
-              />
+              <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: 12 }} />
               <Area type="monotone" dataKey="教案数" stroke="#4f46e5" strokeWidth={2.5} fill="url(#colorLesson)" dot={{ fill: '#4f46e5', r: 4, strokeWidth: 0 }} activeDot={{ r: 6 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
 
-        {/* 科目分布 */}
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
           <div className="mb-5">
             <h2 className="text-sm font-bold text-slate-900">科目分布</h2>
@@ -115,10 +140,7 @@ export default function Dashboard() {
             <BarChart data={barData} layout="vertical" barSize={10}>
               <XAxis type="number" hide />
               <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={40} />
-              <Tooltip
-                contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: 12 }}
-                cursor={false}
-              />
+              <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.08)', fontSize: 12 }} cursor={false} />
               <Bar dataKey="课程数" fill="#4f46e5" radius={[0, 6, 6, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -131,13 +153,17 @@ export default function Dashboard() {
         <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-100 shadow-sm">
           <div className="flex items-center justify-between p-5 border-b border-slate-50">
             <h2 className="text-sm font-bold text-slate-900">最近动态</h2>
-            <button className="text-xs font-semibold text-indigo-600 flex items-center gap-1 hover:underline">
-              查看全部 <ArrowRight size={12} />
-            </button>
+            <Link to="/my-lessons" className="text-xs font-semibold text-indigo-600 flex items-center gap-1 hover:underline">
+              查看教案库 <ArrowRight size={12} />
+            </Link>
           </div>
           <div className="divide-y divide-slate-50">
-            {activities.map((a) => (
-              <div key={a.id} className="p-4 flex items-center gap-3 hover:bg-slate-50/50 transition-colors">
+            {activities.length > 0 ? activities.map((a) => (
+              <div
+                key={a.id}
+                onClick={() => a.lessonId && navigate('/my-lessons')}
+                className={`p-4 flex items-center gap-3 transition-colors ${a.lessonId ? 'hover:bg-slate-50/80 cursor-pointer' : 'hover:bg-slate-50/50'}`}
+              >
                 <div className={`w-8 h-8 rounded-full ${a.color} flex items-center justify-center text-white text-xs font-bold shrink-0`}>
                   {a.user}
                 </div>
@@ -145,8 +171,13 @@ export default function Dashboard() {
                   <p className="text-sm text-slate-700 truncate">{a.title}</p>
                   <p className="text-xs text-slate-400 mt-0.5">{a.time}</p>
                 </div>
+                {a.lessonId && <ArrowRight size={13} className="text-slate-300 shrink-0" />}
               </div>
-            ))}
+            )) : (
+              <div className="p-8 text-center text-slate-400 text-sm">
+                暂无动态，<Link to="/lesson-plan" className="text-indigo-500 hover:underline">去生成第一份教案</Link>
+              </div>
+            )}
           </div>
         </div>
 
@@ -164,20 +195,28 @@ export default function Dashboard() {
             </div>
           </Link>
 
-          <Link to="/communication" className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all group">
+          <button
+            onClick={() => {
+              // 带最近活跃学生跳转家校沟通
+              const recent = STUDENTS.find(s => s.status === 'active')
+              if (recent) navigate(`/communication?studentId=${recent.id}`)
+              else navigate('/communication')
+            }}
+            className="w-full flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all group text-left"
+          >
             <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center shrink-0 text-xl">💬</div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-slate-800">家校沟通文案</p>
               <p className="text-xs text-slate-400 mt-0.5">关键词 → 专业反馈</p>
             </div>
             <ArrowRight size={14} className="text-slate-300 group-hover:text-indigo-600 transition-all shrink-0" />
-          </Link>
+          </button>
 
           <Link to="/students" className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-indigo-200 hover:shadow-md transition-all group">
             <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center shrink-0 text-xl">👤</div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-slate-800">学生管理</p>
-              <p className="text-xs text-slate-400 mt-0.5">档案 · 进度 · 考级记录</p>
+              <p className="text-xs text-slate-400 mt-0.5">{activeStudents} 位在读 · 点击查看档案</p>
             </div>
             <ArrowRight size={14} className="text-slate-300 group-hover:text-indigo-600 transition-all shrink-0" />
           </Link>

@@ -1,12 +1,11 @@
 import http from 'http'
-import https from 'https'
+import fetch from 'node-fetch'
 
 const API_KEY = 'sk-21f97ac023f2ec9d093d484403592777146f70d8b169d751b8804a00780df3b6'
-const TARGET_HOST = 'vpsairobot.com'
-const PORT = 3001
+const API_BASE = 'https://vpsairobot.com'
+const PORT = 3003
 
-const server = http.createServer((req, res) => {
-  // CORS headers — allow requests from localhost:3000
+const server = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
@@ -17,39 +16,41 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  const options = {
-    hostname: TARGET_HOST,
-    port: 443,
-    path: req.url,
-    method: req.method,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${API_KEY}`,
-      'Host': TARGET_HOST,
-      'Origin': `https://${TARGET_HOST}`,
-      'Referer': `https://${TARGET_HOST}/`,
-      'User-Agent': 'Mozilla/5.0',
-    },
-  }
+  // 读取请求体
+  const chunks = []
+  for await (const chunk of req) chunks.push(chunk)
+  const body = Buffer.concat(chunks).toString()
 
-  const proxyReq = https.request(options, (proxyRes) => {
-    res.writeHead(proxyRes.statusCode, {
-      'Content-Type': proxyRes.headers['content-type'] || 'application/json',
+  try {
+    const targetUrl = `${API_BASE}${req.url}`
+    console.log(`→ ${req.method} ${targetUrl}`)
+
+    const upstream = await fetch(targetUrl, {
+      method: req.method,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`,
+      },
+      body: req.method !== 'GET' ? body : undefined,
+    })
+
+    console.log(`← ${upstream.status}`)
+
+    res.writeHead(upstream.status, {
+      'Content-Type': upstream.headers.get('content-type') || 'application/json',
       'Access-Control-Allow-Origin': '*',
       'Cache-Control': 'no-cache',
     })
-    proxyRes.pipe(res)
-  })
 
-  proxyReq.on('error', (err) => {
-    console.error('Proxy error:', err)
+    upstream.body.pipe(res)
+  } catch (err) {
+    console.error('Proxy error:', err.message)
     res.writeHead(500)
-    res.end(JSON.stringify({ error: err.message }))
-  })
-
-  req.pipe(proxyReq)
+    res.end(JSON.stringify({ error: { message: err.message } }))
+  }
 })
 
 server.listen(PORT, () => {
-  console.log(`✅ Proxy server running at http://localhost:${PORT}`)
+  console.log(`✅ Proxy running at http://localhost:${PORT}`)
+  console.log(`   → https://vpsairobot.com`)
 })

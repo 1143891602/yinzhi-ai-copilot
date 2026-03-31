@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
@@ -6,7 +7,7 @@ import Underline from '@tiptap/extension-underline'
 import Highlight from '@tiptap/extension-highlight'
 import {
   Bold, Italic, List, ListOrdered, Heading1, Heading2,
-  Sparkles, Save, Download, Send, History, Settings2, GraduationCap, AlertCircle, Loader2, CheckCircle
+  Sparkles, Save, Download, Send, History, Settings2, GraduationCap, AlertCircle, Loader2, CheckCircle, BookOpen
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { streamChat } from '@/lib/ai'
@@ -70,13 +71,26 @@ function mdToHtml(md: string): string {
   return html.join('')
 }
 
+const INSTRUMENT_MAP: Record<string, string> = {
+  '钢琴': '钢琴 (Piano)', '声乐': '声乐 (Vocal)', '古筝': '古筝 (Guzheng)',
+  '小提琴': '小提琴 (Violin)', '吉他': '吉他 (Guitar)', '乐理': '乐理 (Theory)',
+}
+const LEVEL_MAP: Record<string, string> = {
+  '初级': '初级 (1-3 级)', '2 级': '初级 (1-3 级)', '3 级': '初级 (1-3 级)',
+  '4 级': '中级 (4-6 级)', '5 级': '中级 (4-6 级)', '6 级': '中级 (4-6 级)',
+  '7 级': '高级 (7-10 级)', '8 级': '高级 (7-10 级)', '考级班': '高级 (7-10 级)',
+}
+
 export default function LessonPlan() {
+  const [searchParams] = useSearchParams()
   const [phase, setPhase] = useState<'idle' | 'streaming' | 'done'>('idle')
   const [streamText, setStreamText] = useState('')
   const [error, setError] = useState('')
   const [followUp, setFollowUp] = useState('')
   const [exporting, setExporting] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [fromStudent, setFromStudent] = useState('')
+  const [fromPackage, setFromPackage] = useState(false)
   const [subject, setSubject] = useState('莫扎特奏鸣曲 K.545')
   const [instrument, setInstrument] = useState('钢琴 (Piano)')
   const [level, setLevel] = useState('中级 (4-6 级)')
@@ -84,6 +98,17 @@ export default function LessonPlan() {
   const rawRef = useRef('')
   const streamBoxRef = useRef<HTMLDivElement>(null)
   const editorContainerRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const inst = searchParams.get('instrument') || searchParams.get('subject')
+    const lv = searchParams.get('level')
+    const student = searchParams.get('student')
+    const topic = searchParams.get('topic')
+    if (inst) setInstrument(INSTRUMENT_MAP[inst] || instrument)
+    if (lv) setLevel(LEVEL_MAP[lv] || level)
+    if (student) setFromStudent(student)
+    if (topic) { setSubject(topic); setFromPackage(true) }
+  }, [])
 
   const editor = useEditor({
     extensions: [
@@ -193,6 +218,18 @@ export default function LessonPlan() {
 
   return (
     <div className="max-w-7xl mx-auto flex flex-col" style={{ height: 'calc(100vh - 7rem)' }}>
+      {fromStudent && (
+        <div className="mb-4 flex items-center gap-2 px-4 py-2.5 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-700">
+          <GraduationCap size={13} />
+          <span>已从学生档案预填参数：<strong>{fromStudent}</strong> · {instrument.split(' ')[0]} · {level}</span>
+        </div>
+      )}
+      {fromPackage && (
+        <div className="mb-4 flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-700">
+          <BookOpen size={13} />
+          <span>已从大课包预填课题：<strong>{subject}</strong> · {instrument.split(' ')[0]} · {level}</span>
+        </div>
+      )}
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">教案自动化生成</h1>

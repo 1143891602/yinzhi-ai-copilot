@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
-import { Sparkles, BookOpen, Download, RotateCcw, ChevronDown, Plus } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { Sparkles, BookOpen, Download, RotateCcw, ChevronDown, Plus, FileText } from 'lucide-react'
 import { streamChat } from '@/lib/ai'
 import { cn } from '@/lib/utils'
 
@@ -42,7 +43,19 @@ function Select({ label, value, onChange, items }: {
   )
 }
 
+// 从大纲文本里解析出课次标题（匹配「第N课」行）
+function parseLessons(text: string): { line: string; title: string }[] {
+  const results: { line: string; title: string }[] = []
+  const lines = text.split('\n')
+  for (const line of lines) {
+    const match = line.match(/第\d+课[^\|｜]*[\|｜]\s*([^\|｜]+)/)
+    if (match) results.push({ line, title: match[1].trim() })
+  }
+  return results
+}
+
 export default function CoursePackage() {
+  const navigate = useNavigate()
   const [form, setForm] = useState<FormData>({
     ageGroup: '', studentLevel: '', totalLessons: '48',
     lessonDuration: '45分钟', teachingStyle: '综合体系', courseType: '钢琴', extra: ''
@@ -217,11 +230,28 @@ ${form.extra ? `- 补充说明：${form.extra}` : ''}
                   )}
                 </div>
               </div>
-              <div className="p-6 prose prose-slate prose-sm max-w-none overflow-y-auto" style={{ maxHeight: 'calc(100vh - 280px)' }}>
-                <pre className="whitespace-pre-wrap font-sans text-sm text-slate-700 leading-relaxed">
-                  {outline}
+              <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 280px)' }}>
+                <div className="font-sans text-sm text-slate-700 leading-relaxed space-y-0.5">
+                  {outline.split('\n').map((line, i) => {
+                    const lessonMatch = line.match(/第(\d+)课[^\|｜]*[\|｜]\s*([^\|｜]+)/)
+                    const lessonTitle = lessonMatch ? lessonMatch[2].trim() : null
+                    return (
+                      <div key={i} className={`flex items-start gap-2 group ${lessonTitle ? 'hover:bg-indigo-50/60 -mx-2 px-2 py-0.5 rounded-lg' : ''}`}>
+                        <pre className="whitespace-pre-wrap flex-1">{line || ' '}</pre>
+                        {lessonTitle && !loading && (
+                          <button
+                            onClick={() => navigate(`/lesson-plan?topic=${encodeURIComponent(lessonTitle)}&subject=${encodeURIComponent(form.courseType)}&level=${encodeURIComponent(form.studentLevel)}`)}
+                            className="shrink-0 opacity-0 group-hover:opacity-100 flex items-center gap-1 text-xs text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg px-2 py-0.5 font-semibold transition-all"
+                            title={`为「${lessonTitle}」生成教案`}
+                          >
+                            <FileText size={10} /> 生成教案
+                          </button>
+                        )}
+                      </div>
+                    )
+                  })}
                   {loading && <span className="inline-block w-0.5 h-4 bg-indigo-500 animate-pulse ml-0.5 align-middle" />}
-                </pre>
+                </div>
               </div>
             </div>
           ) : (

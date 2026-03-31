@@ -9,7 +9,10 @@ export type ApiConfig = {
 export function getApiConfig(): ApiConfig {
   try {
     const raw = localStorage.getItem(CONFIG_KEY)
-    if (raw) return JSON.parse(raw)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (parsed.baseUrl && parsed.apiKey) return parsed
+    }
   } catch {}
   return { baseUrl: '', apiKey: '', model: 'gpt-4o' }
 }
@@ -23,7 +26,6 @@ export function isApiConfigured(): boolean {
   return !!(c.baseUrl && c.apiKey)
 }
 
-// 测试 API 连通性，返回 { ok, message }
 export async function testApiConnection(config: ApiConfig): Promise<{ ok: boolean; message: string }> {
   try {
     const base = config.baseUrl.replace(/\/$/, '')
@@ -51,13 +53,12 @@ export async function testApiConnection(config: ApiConfig): Promise<{ ok: boolea
     return { ok: true, message: `连接成功！模型回复：${reply}` }
   } catch (e: any) {
     if (e?.message?.includes('Failed to fetch') || e?.message?.includes('CORS')) {
-      return { ok: false, message: '跨域（CORS）错误：该 API 服务不支持从浏览器直接访问，请换一个支持 CORS 的 API 服务。' }
+      return { ok: false, message: '跨域（CORS）错误：该 API 服务不支持从浏览器直接访问，请换一个支持 CORS 的 API 服务（推荐 DeepSeek / Moonshot / 智谱）。' }
     }
     return { ok: false, message: `连接失败：${e?.message || '未知错误'}` }
   }
 }
 
-// 流式对话
 export async function streamChat(
   messages: { role: string; content: string }[],
   onChunk: (text: string) => void,
