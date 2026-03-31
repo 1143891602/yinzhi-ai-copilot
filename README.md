@@ -22,20 +22,7 @@
 
 ## 功能截图
 
-### 仪表盘
 ![仪表盘](docs/screenshots/01-dashboard.jpeg)
-
-### 教案自动化生成（AI 流式输出中）
-![教案生成中](docs/screenshots/02-lesson-plan-generating.jpeg)
-
-### 教案生成完成
-![教案生成完成](docs/screenshots/03-lesson-plan-done.jpeg)
-
-### 教研体系知识库管理
-![教研体系](docs/screenshots/04-teaching-research.jpeg)
-
-### 智能家校沟通
-![家校沟通](docs/screenshots/05-communication.jpeg)
 
 ---
 
