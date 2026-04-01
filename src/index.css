@@ -3,70 +3,283 @@
 @tailwind utilities;
 
 :root {
-  --primary: 99 102 241;
-  --secondary: 168 85 247;
-  --accent: 245 158 11;
-  --background: 248 250 252;
-  --glass: rgba(255, 255, 255, 0.75);
+  --glass-blur: 28px;
+  --glass-opacity: 0.72;
+  --glass-border: 0.56;
+  --surface: 255, 255, 255;
+  --surface-strong: 255, 255, 255;
+  --ink: 15, 23, 42;
+  --muted: 100, 116, 139;
+  --brand-purple: 110, 44, 242;
+  --brand-blue: 33, 150, 243;
+  --brand-pink: 236, 72, 153;
 }
 
 @layer base {
   * {
     box-sizing: border-box;
-    @apply border-slate-200;
   }
-  html, body {
+
+  html,
+  body,
+  #root {
     margin: 0;
     padding: 0;
+    min-height: 100%;
     width: 100%;
-    /* 彻底放开滚动限制 */
-    overflow-x: hidden;
-    overflow-y: auto !important;
   }
+
+  html {
+    overflow-x: hidden;
+    background: #f8f7fb;
+  }
+
   body {
-    font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    -webkit-font-smoothing: antialiased;
-    @apply bg-slate-50 text-slate-900 selection:bg-indigo-100 selection:text-indigo-700;
-    background-image: 
-      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.03) 0px, transparent 50%),
-      radial-gradient(at 100% 0%, rgba(168, 85, 247, 0.03) 0px, transparent 50%);
+    overflow-x: hidden;
+    color: rgb(var(--ink));
+    font-family: Inter, 'SF Pro Display', 'PingFang SC', system-ui, sans-serif;
+    background:
+      radial-gradient(circle at 12% 14%, rgba(var(--brand-purple), 0.18) 0, transparent 26%),
+      radial-gradient(circle at 88% 12%, rgba(var(--brand-blue), 0.15) 0, transparent 24%),
+      radial-gradient(circle at 50% 120%, rgba(var(--brand-pink), 0.12) 0, transparent 34%),
+      linear-gradient(180deg, #ffffff 0%, #fbfbfe 40%, #f3f4f8 100%);
     background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    selection-color: rgba(var(--brand-purple), 0.2);
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: rgba(var(--muted), 0.75);
   }
 }
 
 @layer components {
-  .glass-card {
-    @apply bg-white/70 backdrop-blur-xl border border-white/20 shadow-xl shadow-slate-200/50;
-  }
-  
-  .glass-sidebar {
-    @apply bg-white/40 backdrop-blur-2xl border-r border-white/20;
+  .premium-shell {
+    @apply relative overflow-hidden;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.66)),
+      radial-gradient(circle at top left, rgba(var(--brand-purple), 0.08), transparent 40%);
   }
 
-  .btn-hover {
-    @apply hover:scale-[1.02] active:scale-[0.98] transition-all duration-200;
+  .premium-glass {
+    @apply relative overflow-hidden transition-all duration-500;
+    background: linear-gradient(180deg, rgba(var(--surface), 0.78), rgba(var(--surface), 0.56));
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid rgba(255, 255, 255, var(--glass-border));
+    box-shadow:
+      0 18px 50px rgba(15, 23, 42, 0.08),
+      inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    border-radius: 32px;
+  }
+
+  .premium-glass::before {
+    content: '';
+    @apply absolute inset-0 pointer-events-none;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.42), transparent 45%, rgba(110, 44, 242, 0.04) 100%);
+    opacity: 0.9;
+  }
+
+  .premium-glass:hover {
+    transform: translateY(-4px);
+    box-shadow:
+      0 24px 70px rgba(15, 23, 42, 0.12),
+      0 0 0 1px rgba(255, 255, 255, 0.65),
+      0 24px 60px rgba(110, 44, 242, 0.08);
+  }
+
+  .secondary-glass {
+    @apply relative overflow-hidden transition-all duration-300;
+    background: rgba(255, 255, 255, 0.48);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid rgba(255, 255, 255, 0.62);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.05);
+    border-radius: 24px;
+  }
+
+  .neural-card {
+    @apply premium-glass;
+  }
+
+  .glass-border {
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  .hero-text {
+    @apply text-[clamp(2.8rem,7vw,5.8rem)] font-light tracking-[-0.065em] leading-[0.92];
+    color: rgb(15 23 42);
+  }
+
+  .hero-text b,
+  .hero-text strong {
+    @apply font-black;
+    color: rgb(15 23 42);
+  }
+
+  .section-title {
+    @apply text-[clamp(1.5rem,2vw,2.4rem)] font-light tracking-[-0.04em];
+    color: rgb(15 23 42);
+  }
+
+  .section-title strong {
+    @apply font-black;
+  }
+
+  .mono-label {
+    @apply font-mono text-[9px] uppercase tracking-[0.32em];
+    color: rgba(var(--muted), 0.88);
+  }
+
+  .apple-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-8 py-4 text-[13px] font-semibold tracking-tight transition-all duration-300;
+    color: white;
+    background: linear-gradient(135deg, rgb(110, 44, 242), rgb(82, 131, 255));
+    box-shadow: 0 18px 35px rgba(110, 44, 242, 0.24);
+  }
+
+  .apple-btn:hover {
+    transform: translateY(-2px) scale(1.01);
+    box-shadow: 0 22px 44px rgba(110, 44, 242, 0.28);
+  }
+
+  .apple-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+
+  .ghost-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-[12px] font-semibold transition-all duration-300;
+    color: rgb(51 65 85);
+    background: rgba(255, 255, 255, 0.52);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.04);
+  }
+
+  .ghost-btn:hover {
+    background: rgba(255, 255, 255, 0.78);
+    color: rgb(15 23 42);
+    transform: translateY(-1px);
+  }
+
+  .btn-futuristic {
+    @apply inline-flex items-center justify-center gap-2 rounded-[22px] px-5 py-3 text-[12px] font-semibold transition-all duration-300;
+    background: rgba(255, 255, 255, 0.6);
+    color: rgb(51 65 85);
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  }
+
+  .btn-futuristic:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 16px 30px rgba(110, 44, 242, 0.12);
   }
 }
 
-/* 隐藏横向滚动条，美化纵向滚动条 */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+@keyframes breathe-slow {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.08);
+  }
 }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 10px;
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0);
+  }
 }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+@keyframes drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(18px, -12px, 0) scale(1.04);
+  }
+}
+
+.animate-breathe-slow {
+  animation: breathe-slow 10s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 9s ease-in-out infinite;
+}
+
+.animate-drift {
+  animation: drift 14s ease-in-out infinite;
+}
+
+.ambient-glow {
+  @apply absolute pointer-events-none rounded-full;
+  filter: blur(90px);
+  opacity: 0.55;
+}
+
+.soft-noise {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.22;
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.9) 0.6px, transparent 0.6px),
+    radial-gradient(rgba(226, 232, 240, 0.7) 0.6px, transparent 0.6px);
+  background-position: 0 0, 12px 12px;
+  background-size: 24px 24px;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.35), transparent 85%);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 .tiptap {
-  outline: none;
-  padding: 2rem;
-  min-height: 500px;
-  line-height: 1.8;
-  @apply text-slate-700;
+  @apply text-base leading-8 font-normal outline-none;
+  color: rgba(30, 41, 59, 0.82);
 }
-.tiptap h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: #1e293b; }
-.tiptap h2 { font-size: 1.3rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 1rem; color: #4f46e5; border-left: 4px solid #4f46e5; padding-left: 1rem; }
-.tiptap p { margin-bottom: 1rem; color: #475569; }
+
+.tiptap h1 {
+  @apply mb-8 text-3xl font-black tracking-tight;
+  color: rgb(15 23 42);
+}
+
+.tiptap h2 {
+  @apply mt-10 mb-4 text-xl font-semibold;
+  color: rgb(30 41 59);
+}
+
+.tiptap p {
+  @apply mb-4;
+}
+
+.tiptap ul,
+.tiptap ol {
+  @apply pl-6 mb-4;
+}

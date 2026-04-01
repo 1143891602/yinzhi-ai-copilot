@@ -28,26 +28,22 @@ export default function Sidebar() {
   const location = useLocation()
 
   return (
-    <div className="flex flex-col w-64 h-screen bg-slate-950 text-white shrink-0 relative z-40 shadow-2xl">
-      {/* Glow Effect */}
-      <div className="absolute top-0 left-0 w-full h-32 bg-indigo-600/10 blur-[100px] pointer-events-none" />
-      
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-7 py-8 relative">
-        <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
-          <div className="relative bg-slate-900 p-2 rounded-xl ring-1 ring-white/10 flex items-center justify-center">
-            <Music4 className="w-5 h-5 text-indigo-400" />
+    <aside className="premium-glass flex h-full w-full flex-col overflow-hidden border border-white/70 bg-white/55 shadow-soft">
+      <div className="px-7 pt-8 pb-6 relative">
+        <div className="absolute right-4 top-3 h-16 w-16 rounded-full bg-premium-purple/10 blur-2xl animate-breathe-slow" />
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="relative flex h-12 w-12 items-center justify-center rounded-[20px] border border-white/80 bg-white/75 shadow-[0_10px_28px_rgba(110,44,242,0.14)]">
+            <div className="absolute inset-1 rounded-[16px] bg-gradient-to-br from-premium-purple/15 to-sky-300/20" />
+            <Music4 className="relative z-10 h-5 w-5 text-slate-800" />
           </div>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">音智 AI</span>
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-500/80">Copilot V2.1</span>
+          <div className="min-w-0">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-400">Intelligent Core</p>
+            <h1 className="mt-1 text-xl font-black tracking-tight text-slate-900">音智 AI</h1>
+          </div>
         </div>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-4 space-y-1 relative mt-2">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-4 pb-4 no-scrollbar">
         {menu.map((item) => {
           const isActive = location.pathname === item.to || (item.to === '/' && location.pathname === '/')
           return (
@@ -55,67 +51,59 @@ export default function Sidebar() {
               key={item.to}
               to={item.to}
               end={item.to === '/'}
-              className={({ isActive }) =>
-                cn(
-                  'relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 group overflow-hidden',
-                  isActive
-                    ? 'text-white'
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
-                )
-              }
+              className={cn(
+                'relative flex items-center gap-4 overflow-hidden rounded-[22px] px-4 py-3.5 text-[13px] font-medium tracking-tight transition-all duration-300',
+                isActive ? 'text-slate-900' : 'text-slate-500 hover:text-slate-900'
+              )}
             >
               {isActive && (
                 <motion.div
                   layoutId="sidebar-active"
-                  className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-indigo-500 shadow-lg shadow-indigo-500/20"
-                  transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
+                  className="absolute inset-0 rounded-[22px] border border-white/80 bg-white/85 shadow-[0_14px_30px_rgba(110,44,242,0.12)]"
+                  transition={{ type: 'spring', bounce: 0.12, duration: 0.5 }}
                 />
               )}
-              <item.icon className={cn("w-4.5 h-4.5 shrink-0 relative z-10", isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300")} size={18} />
+              {!isActive && <div className="absolute inset-0 rounded-[22px] bg-white/0 transition-all duration-300 hover:bg-white/45" />}
+              <item.icon
+                className={cn(
+                  'relative z-10 h-[18px] w-[18px] shrink-0 transition-colors',
+                  isActive ? 'text-premium-purple' : 'text-slate-400 group-hover:text-slate-700'
+                )}
+                strokeWidth={isActive ? 2.5 : 2.1}
+              />
               <span className="relative z-10">{item.name}</span>
             </NavLink>
           )
         })}
       </nav>
 
-      {/* Bottom Section */}
-      <div className="p-4 border-t border-white/5 space-y-1 relative bg-slate-950/50 backdrop-blur-md">
+      <div className="border-t border-slate-200/80 px-4 py-5">
         <NavLink
           to="/settings"
           className={({ isActive }) =>
             cn(
-              'relative flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 group overflow-hidden',
+              'mb-3 flex items-center gap-4 rounded-[20px] px-4 py-3 text-[13px] font-medium tracking-tight transition-all duration-300',
               isActive
-                ? 'text-white'
-                : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                ? 'bg-white/80 text-slate-900 shadow-[0_10px_26px_rgba(15,23,42,0.06)]'
+                : 'text-slate-500 hover:bg-white/50 hover:text-slate-900'
             )
           }
         >
-          {location.pathname === '/settings' && (
-            <motion.div
-              layoutId="sidebar-active"
-              className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-indigo-500 shadow-lg shadow-indigo-500/20"
-              transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
-            />
-          )}
-          <Settings className={cn("relative z-10", location.pathname === '/settings' ? "text-white" : "text-slate-500 group-hover:text-slate-300")} size={18} />
-          <span className="relative z-10">系统设置</span>
+          <Settings size={18} className="text-slate-500" />
+          <span>系统设置</span>
         </NavLink>
 
-        <div className="flex items-center gap-3 px-4 py-4 rounded-2xl bg-white/5 border border-white/5 mt-3 group hover:bg-white/10 transition-all duration-300 cursor-pointer">
-          <div className="relative shrink-0">
-            <div className="absolute -inset-0.5 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full blur opacity-50 group-hover:opacity-75 transition duration-300" />
-            <div className="relative w-9 h-9 rounded-full bg-slate-900 flex items-center justify-center ring-1 ring-white/20">
-              <GraduationCap size={16} className="text-white" />
-            </div>
-            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 border-2 border-slate-950 rounded-full" />
+        <div className="secondary-glass flex items-center gap-4 rounded-[24px] px-4 py-4 bg-white/65">
+          <div className="flex h-11 w-11 items-center justify-center rounded-[18px] bg-gradient-to-br from-premium-purple/15 to-sky-300/20 text-slate-700 shadow-[0_10px_24px_rgba(33,150,243,0.12)]">
+            <GraduationCap size={18} strokeWidth={2.3} />
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-bold truncate text-slate-200">特级教师 张老师</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">钢琴教研中心</p>
+            <p className="text-[12px] font-semibold text-slate-800 truncate">张老师</p>
+            <p className="mono-label text-[7px] text-slate-400">Creative Faculty Pro</p>
           </div>
         </div>
       </div>
-    </div>
+    </aside>
   )
 }
+

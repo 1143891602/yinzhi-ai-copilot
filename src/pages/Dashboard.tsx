@@ -1,13 +1,19 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { FilePlus, Users, TrendingUp, ArrowRight, Plus, Zap, Activity, PieChart, Sparkles } from 'lucide-react'
+import { FilePlus, Users, TrendingUp, ArrowRight, Plus, Activity, Sparkles, ChevronRight } from 'lucide-react'
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, BarChart, Bar
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
 } from 'recharts'
 import { getLessons } from '@/lib/lessonStorage'
 import { getStudents, type Student } from '@/lib/studentsData'
-import BorderGlow from '@/components/ui/BorderGlow'
 
 const areaData = [
   { name: '1月', 教案数: 52 },
@@ -36,21 +42,17 @@ function formatAgo(iso: string) {
   return `${Math.floor(hours / 24)} 天前`
 }
 
-const avatarColors = ['bg-blue-500', 'bg-purple-500', 'bg-emerald-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500']
-
 const container = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
-  }
+    transition: { staggerChildren: 0.12 },
+  },
 }
 
 const item = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } }
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
 }
 
 export default function Dashboard() {
@@ -60,211 +62,245 @@ export default function Dashboard() {
   const activeStudents = allStudents.filter((s: Student) => s.status === 'active').length
 
   const stats = [
-    { name: '已保存教案数', value: String(lessons.length || 0), change: lessons.length > 0 ? `最近：${formatAgo(lessons[0]?.createdAt)}` : '暂无教案', up: true, icon: FilePlus, iconColor: 'text-blue-600', bg: 'bg-blue-50' },
-    { name: '在读学生总数', value: String(activeStudents), change: `共 ${allStudents.length} 人`, up: true, icon: Users, iconColor: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { name: '服务机构数', value: '45', change: '+3 家', up: true, icon: Users, iconColor: 'text-purple-600', bg: 'bg-purple-50' },
-    { name: '效率综合提升', value: '42%', change: '↑ 5% vs 上周', up: true, icon: TrendingUp, iconColor: 'text-orange-600', bg: 'bg-orange-50' },
+    { name: '教案总数', value: String(lessons.length || 0), icon: FilePlus, trend: '+12%' },
+    { name: '在读学生', value: String(activeStudents), icon: Users, trend: '+3' },
+    { name: '服务机构', value: '45', icon: Activity, trend: '+1' },
+    { name: '效率提升', value: '42%', icon: TrendingUp, trend: '↑ 5%' },
   ]
 
-  const recentActivities = lessons.slice(0, 4).map((l, i) => ({
+  const activities = lessons.slice(0, 4).map((l) => ({
     id: l.id,
-    title: `《${l.title}》${l.subject}教案已保存`,
+    title: `《${l.title}》已同步`,
     time: formatAgo(l.createdAt),
-    user: l.subject[0] || '案',
-    color: avatarColors[i % avatarColors.length],
-    lessonId: l.id,
+    subject: l.subject,
   }))
 
-  const placeholders = [
-    { id: 'p1', title: '教研库更新：现代少儿声乐发声练习曲', time: '昨天', user: '系', color: 'bg-slate-400', lessonId: null },
-    { id: 'p2', title: '新增家校回访：王小明 5 级钢琴辅导方案', time: '2 天前', user: '张', color: 'bg-purple-500', lessonId: null },
-  ]
-
-  const activities = [...recentActivities, ...placeholders].slice(0, 4)
-
   return (
-    <motion.div 
-      variants={container}
-      initial="hidden"
-      animate="show"
-      className="max-w-6xl mx-auto space-y-8"
-    >
-      {/* 顶部 */}
-      <div className="flex items-end justify-between">
-        <motion.div variants={item}>
-          <p className="text-[10px] font-bold text-indigo-500 mb-1.5 tracking-[0.25em] uppercase">音智 AI 教研中心</p>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">下午好，音智教研组 👋</h1>
-          <p className="mt-1 text-slate-500 text-sm font-medium">
-            {lessons.length > 0
-              ? `教案库共 ${lessons.length} 份，${activeStudents} 位学生在读`
-              : `${activeStudents} 位学生在读，还没有保存过教案`}
-          </p>
-        </motion.div>
-        <motion.div variants={item}>
-          <BorderGlow borderRadius="16px" borderWidth="2px" animationDuration="4s">
-            <Link
-              to="/lesson-plan"
-              className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all"
+    <div className="relative min-h-screen overflow-hidden px-4 pb-20 pt-4 lg:px-6">
+      <div className="ambient-glow left-[-80px] top-[10%] h-[260px] w-[260px] bg-premium-purple/18 animate-drift" />
+      <div className="ambient-glow bottom-[10%] right-[-40px] h-[220px] w-[220px] bg-sky-300/20 animate-float-slow" />
+
+      <motion.div variants={container} initial="hidden" animate="show" className="mx-auto max-w-7xl space-y-8">
+        <section className="premium-glass relative overflow-hidden px-8 py-10 lg:px-12 lg:py-14">
+          <div className="absolute inset-y-0 right-0 w-[40%] bg-gradient-to-l from-premium-purple/10 via-transparent to-transparent" />
+          <div className="absolute -right-20 top-10 h-48 w-48 rounded-full bg-premium-purple/15 blur-3xl animate-breathe-slow" />
+          <motion.div variants={item} className="relative z-10 flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl space-y-6">
+              <div className="flex items-center gap-4">
+                <span className="mono-label">Living dashboard / 2026</span>
+                <div className="h-2 w-2 rounded-full bg-premium-purple animate-pulse" />
+              </div>
+              <h1 className="hero-text leading-[1.1]">
+                白色空间里，<strong>让教研系统开始呼吸。</strong>
+              </h1>
+              <p className="max-w-2xl text-[17px] leading-8 text-slate-500">
+                我们把界面切换为轻盈的白色玻璃质感，并通过环境光、漂浮渐变和节奏动效，
+                让仪表盘既清爽克制，又有持续流动的生命感。
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link to="/lesson-plan" className="apple-btn">
+                <Plus size={18} strokeWidth={2.8} />
+                开始智能教研
+              </Link>
+              <button onClick={() => navigate('/teaching-research')} className="ghost-btn">
+                查看教研库
+              </button>
+            </div>
+          </motion.div>
+        </section>
+
+        <section className="grid grid-cols-2 gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {stats.map((s, index) => (
+            <motion.div
+              key={s.name}
+              variants={item}
+              whileHover={{ y: -8, scale: 1.02 }}
+              className="premium-glass group relative overflow-hidden p-7 transition-all hover:shadow-[0_32px_64px_rgba(110,44,242,0.12)]"
             >
-              <Plus size={18} strokeWidth={3} /> 创建新教案
-            </Link>
-          </BorderGlow>
-        </motion.div>
-      </div>
-
-      {/* 数据卡片 */}
-      <motion.div variants={item} className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        {stats.map((s) => (
-          <div key={s.name} className="p-6 bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-[0.03] group-hover:scale-150 transition-transform duration-500">
-              <s.icon size={80} />
-            </div>
-            <div className="flex items-start justify-between mb-5 relative z-10">
-              <div className={`p-3 rounded-2xl ${s.bg} group-hover:scale-110 transition-transform duration-300`}>
-                <s.icon size={20} className={s.iconColor} />
-              </div>
-              <span className="text-[10px] font-black px-2.5 py-1 rounded-full text-emerald-600 bg-emerald-50 tracking-wide">
-                {s.change}
-              </span>
-            </div>
-            <p className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">{s.name}</p>
-            <p className="text-3xl font-black text-slate-900 tracking-tight">{s.value}</p>
-          </div>
-        ))}
-      </motion.div>
-
-      {/* 图表区 */}
-      <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-8 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-[0.02] pointer-events-none">
-            <Activity size={120} />
-          </div>
-          <div className="flex items-center justify-between mb-8 relative z-10">
-            <div>
-              <h2 className="text-base font-black text-slate-900 tracking-tight">教案生成趋势</h2>
-              <p className="text-xs font-bold text-slate-400 mt-0.5 uppercase tracking-widest">近 6 个月活跃度</p>
-            </div>
-            <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-4 py-2 rounded-xl">月均 87 份</span>
-          </div>
-          <div className="relative z-10">
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={areaData}>
-                <defs>
-                  <linearGradient id="colorLesson" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#4f46e5" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 600 }} axisLine={false} tickLine={false} />
-                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: 12, fontWeight: 700 }} />
-                <Area type="monotone" dataKey="教案数" stroke="#4f46e5" strokeWidth={4} fill="url(#colorLesson)" dot={{ fill: '#4f46e5', r: 5, strokeWidth: 0 }} activeDot={{ r: 8, stroke: '#fff', strokeWidth: 3 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-8 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-[0.02] pointer-events-none">
-            <PieChart size={120} />
-          </div>
-          <div className="mb-8 relative z-10">
-            <h2 className="text-base font-black text-slate-900 tracking-tight">科目分布</h2>
-            <p className="text-xs font-bold text-slate-400 mt-0.5 uppercase tracking-widest">本月教研覆盖度</p>
-          </div>
-          <div className="relative z-10">
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={barData} layout="vertical" barSize={12} margin={{ left: -20 }}>
-                <XAxis type="number" hide />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 700 }} axisLine={false} tickLine={false} width={60} />
-                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', fontSize: 12, fontWeight: 700 }} cursor={false} />
-                <Bar dataKey="课程数" fill="#4f46e5" radius={[0, 8, 8, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* 底部 */}
-      <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* 最近动态 */}
-        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between p-6 border-b border-slate-50">
-            <h2 className="text-base font-black text-slate-900 tracking-tight">最近动态</h2>
-            <Link to="/my-lessons" className="text-xs font-black text-indigo-600 flex items-center gap-1.5 hover:gap-2 transition-all uppercase tracking-wider">
-              查看全部 <ArrowRight size={14} strokeWidth={3} />
-            </Link>
-          </div>
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
-            {activities.length > 0 ? activities.map((a) => (
-              <div
-                key={a.id}
-                onClick={() => a.lessonId && navigate('/my-lessons')}
-                className={`p-5 flex items-center gap-4 transition-colors ${a.lessonId ? 'hover:bg-slate-50 cursor-pointer' : 'hover:bg-slate-50/50'}`}
-              >
-                <div className={`w-10 h-10 rounded-2xl ${a.color} flex items-center justify-center text-white text-xs font-black shadow-lg shadow-current/10 shrink-0`}>
-                  {a.user}
+              <div className="relative z-10 flex items-start justify-between">
+                <div className="secondary-glass flex h-14 w-14 items-center justify-center rounded-[22px] bg-white/70 text-slate-700 transition-colors group-hover:bg-premium-purple group-hover:text-white">
+                  <s.icon size={20} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-slate-800 truncate leading-snug">{a.title}</p>
-                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{a.time}</p>
-                </div>
-                {a.lessonId && <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-white transition-colors"><ArrowRight size={14} className="text-slate-300 shrink-0" /></div>}
+                <span className="rounded-full bg-premium-purple/10 px-3 py-1 text-[10px] font-semibold tracking-[0.18em] text-premium-purple transition-colors group-hover:bg-white/20 group-hover:text-white">
+                  {s.trend}
+                </span>
               </div>
-            )) : (
-              <div className="p-12 text-center text-slate-400 text-sm font-bold">
-                暂无动态，<Link to="/lesson-plan" className="text-indigo-500 hover:underline">去生成第一份教案</Link>
+              <div className="relative z-10 mt-10 space-y-2">
+                <p className="mono-label text-slate-400 transition-colors group-hover:text-white/70">{s.name}</p>
+                <h3 className="text-4xl font-black tabular-nums tracking-tight text-slate-900 transition-colors group-hover:text-white">
+                  {s.value}
+                </h3>
               </div>
-            )}
-          </div>
-        </div>
 
-        {/* 快捷入口 */}
-        <div className="space-y-4">
-          <BorderGlow borderRadius="32px" borderWidth="3px" animationDuration="6s" glowColor="#8b5cf6">
-            <Link to="/lesson-plan" className="block p-7 bg-indigo-600 rounded-[32px] text-white shadow-2xl shadow-indigo-200 group relative overflow-hidden h-full">
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="flex items-center gap-2 mb-3 relative z-10">
-                <div className="p-1.5 bg-white/20 rounded-lg">
-                  <Sparkles size={14} className="text-white" />
-                </div>
-                <span className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em]">智能教研</span>
-              </div>
-              <p className="text-xl font-black mb-1 relative z-10">立即生成专业教案</p>
-              <p className="text-indigo-100/70 text-xs font-medium leading-relaxed relative z-10">输入曲目，60 秒内生成标准化教学方案</p>
-              <div className="mt-6 flex items-center gap-2 text-xs font-black text-white relative z-10">
-                开始生成 <div className="p-1 bg-white/20 rounded-lg group-hover:translate-x-1 transition-transform"><ArrowRight size={12} strokeWidth={3} /></div>
-              </div>
-            </Link>
-          </BorderGlow>
+              <div className="absolute inset-0 z-0 bg-gradient-to-br from-premium-purple to-indigo-600 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+              <div className="absolute inset-x-6 bottom-0 z-10 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+            </motion.div>
+          ))}
+        </section>
 
-          <button
-            onClick={() => {
-              const recent = allStudents.find((s: Student) => s.status === 'active')
-              if (recent) navigate(`/communication?studentId=${recent.id}`)
-              else navigate('/communication')
-            }}
-            className="w-full flex items-center gap-5 p-5 bg-white rounded-3xl border border-slate-100 shadow-sm hover:border-indigo-200 hover:shadow-xl hover:shadow-slate-200/50 transition-all group text-left"
-          >
-            <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center shrink-0 text-2xl group-hover:scale-110 transition-transform">💬</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-black text-slate-800">家校沟通反馈</p>
-              <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">AI 自动整理话术</p>
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <motion.div variants={item} className="premium-glass lg:col-span-8 p-8 lg:p-10">
+            <div className="mb-10 flex items-center justify-between gap-4">
+              <div>
+                <h2 className="section-title">
+                  教研动态<span className="font-black">趋势.</span>
+                </h2>
+                <p className="mono-label mt-2 text-slate-400">6-Month analytics intelligence</p>
+              </div>
+              <div className="secondary-glass rounded-full px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-premium-purple">
+                Growth +24%
+              </div>
             </div>
-            <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-indigo-50 transition-colors"><ArrowRight size={14} className="text-slate-300 group-hover:text-indigo-600 transition-all" strokeWidth={3} /></div>
-          </button>
-
-          <Link to="/students" className="flex items-center gap-5 p-5 bg-white rounded-3xl border border-slate-100 shadow-sm hover:border-indigo-200 hover:shadow-xl hover:shadow-slate-200/50 transition-all group">
-            <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center shrink-0 text-2xl group-hover:scale-110 transition-transform">👤</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-black text-slate-800">学生档案库</p>
-              <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">{activeStudents} 位在读活跃</p>
+            <div className="h-[320px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={areaData}>
+                  <defs>
+                    <linearGradient id="premiumGradientLight" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#6e2cf2" stopOpacity={0.24} />
+                      <stop offset="100%" stopColor="#6e2cf2" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.16)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} dy={10} />
+                  <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(255,255,255,0.92)',
+                      border: '1px solid rgba(255,255,255,0.82)',
+                      borderRadius: '20px',
+                      boxShadow: '0 22px 44px rgba(15,23,42,0.10)',
+                      backdropFilter: 'blur(18px)',
+                      color: '#0f172a',
+                    }}
+                    labelStyle={{ color: '#64748b', fontSize: '11px' }}
+                    itemStyle={{ color: '#0f172a', fontSize: '12px', fontWeight: 700 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="教案数"
+                    stroke="#6e2cf2"
+                    strokeWidth={3}
+                    fill="url(#premiumGradientLight)"
+                    dot={{ r: 4, fill: '#ffffff', stroke: '#6e2cf2', strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: '#6e2cf2', stroke: '#ffffff', strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
-            <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-indigo-50 transition-colors"><ArrowRight size={14} className="text-slate-300 group-hover:text-indigo-600 transition-all" strokeWidth={3} /></div>
-          </Link>
-        </div>
+          </motion.div>
+
+          <motion.div variants={item} className="lg:col-span-4 space-y-6">
+            <div className="premium-glass flex flex-col p-8">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="section-title text-[1.55rem]">
+                    近期<span className="font-black">日志.</span>
+                  </h2>
+                  <p className="mono-label mt-2 text-slate-400">System activity log</p>
+                </div>
+                <div className="secondary-glass rounded-full bg-white/70 px-4 py-2 text-[10px] font-semibold text-slate-400">
+                  REAL-TIME
+                </div>
+              </div>
+              <div className="mt-8 space-y-3">
+                {activities.length > 0 ? (
+                  activities.map((a) => (
+                    <div
+                      key={a.id}
+                      onClick={() => navigate(`/my-lessons`)}
+                      className="secondary-glass group/item flex cursor-pointer items-center justify-between rounded-[22px] px-4 py-4 transition-all hover:bg-white/95 hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]"
+                    >
+                      <div>
+                        <p className="text-[13px] font-medium text-slate-700 transition-colors group-hover/item:text-premium-purple">
+                          {a.title}
+                        </p>
+                        <p className="mt-1 text-[11px] text-slate-400">{a.time}</p>
+                      </div>
+                      <ChevronRight size={16} className="text-slate-300 transition-transform group-hover/item:translate-x-1 group-hover/item:text-premium-purple" />
+                    </div>
+                  ))
+                ) : (
+                  <div className="secondary-glass rounded-[22px] px-4 py-8 text-center text-sm text-slate-400">
+                    还没有保存过教案，先去生成一份吧。
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="premium-glass relative overflow-hidden p-8">
+              <div className="absolute right-[-20px] top-[-10px] h-40 w-40 rounded-full bg-premium-purple/14 blur-3xl animate-float-slow" />
+              <div className="relative z-10 flex h-full min-h-[220px] flex-col justify-between">
+                <div>
+                  <div className="secondary-glass mb-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-premium-purple">
+                    <Sparkles size={12} /> 高级教研流
+                  </div>
+                  <h3 className="text-[2rem] font-light leading-tight tracking-[-0.05em] text-slate-900">
+                    更明亮，<br />
+                    更轻盈的<span className="font-black">智能教案.</span>
+                  </h3>
+                  <p className="mt-4 max-w-[220px] text-[13px] leading-6 text-slate-500">
+                    用更柔和的光、更多留白和更低噪点，持续强化“专业且有温度”的品牌观感。
+                  </p>
+                </div>
+                <button onClick={() => navigate('/lesson-plan')} className="ghost-btn w-fit">
+                  立即探索 <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </section>
+
+        <section className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <motion.div variants={item} className="premium-glass lg:col-span-7 p-8 lg:p-10">
+            <div className="mb-8 flex items-center justify-between">
+              <div>
+                <h2 className="section-title text-[1.6rem]">
+                  科目<span className="font-black">分布.</span>
+                </h2>
+                <p className="mono-label mt-2 text-slate-400">Course structure overview</p>
+              </div>
+            </div>
+            <div className="h-[280px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={barData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.16)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'rgba(255,255,255,0.92)',
+                      border: '1px solid rgba(255,255,255,0.82)',
+                      borderRadius: '18px',
+                      boxShadow: '0 22px 44px rgba(15,23,42,0.10)',
+                      color: '#0f172a',
+                    }}
+                  />
+                  <Bar dataKey="课程数" fill="#2196f3" radius={[12, 12, 0, 0]} barSize={36} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
+
+          <motion.div variants={item} className="premium-glass lg:col-span-5 p-8 lg:p-10">
+            <div className="flex items-center gap-3">
+              <div className="secondary-glass flex h-12 w-12 items-center justify-center rounded-[20px] bg-white/78 text-premium-purple">
+                <Sparkles size={18} />
+              </div>
+              <div>
+                <p className="mono-label text-slate-400">Ambient design note</p>
+                <h3 className="mt-1 text-xl font-semibold tracking-tight text-slate-900">生命感来自节奏，不来自噪音</h3>
+              </div>
+            </div>
+            <div className="mt-8 space-y-4 text-[14px] leading-7 text-slate-500">
+              <p>这次改造把深色高对比界面，转成了白色、雾感、柔发光的层级体系。</p>
+              <p>环境光随着鼠标轻微移动，卡片保留升起和呼吸节奏，让系统像一个持续工作的设计对象，而不是静态表单。</p>
+              <p>如果你愿意，我下一步可以继续把 <span className="font-semibold text-slate-700">学生管理、设置页、我的教案库</span> 也统一到同一套白色生命感语言。</p>
+            </div>
+          </motion.div>
+        </section>
       </motion.div>
-    </motion.div>
+    </div>
   )
 }
