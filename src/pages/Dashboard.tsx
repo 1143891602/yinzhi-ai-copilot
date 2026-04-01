@@ -7,6 +7,7 @@ import {
 } from 'recharts'
 import { getLessons } from '@/lib/lessonStorage'
 import { getStudents, type Student } from '@/lib/studentsData'
+import BorderGlow from '@/components/ui/BorderGlow'
 
 const areaData = [
   { name: '1月', 教案数: 52 },
@@ -100,12 +101,14 @@ export default function Dashboard() {
           </p>
         </motion.div>
         <motion.div variants={item}>
-          <Link
-            to="/lesson-plan"
-            className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-indigo-200 hover:bg-indigo-700 hover:scale-[1.02] active:scale-[0.98] transition-all"
-          >
-            <Plus size={18} strokeWidth={3} /> 创建新教案
-          </Link>
+          <BorderGlow borderRadius="16px" borderWidth="2px" animationDuration="4s">
+            <Link
+              to="/lesson-plan"
+              className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-3 rounded-2xl font-bold text-sm shadow-xl shadow-indigo-200 hover:bg-indigo-700 transition-all"
+            >
+              <Plus size={18} strokeWidth={3} /> 创建新教案
+            </Link>
+          </BorderGlow>
         </motion.div>
       </div>
 
@@ -219,20 +222,22 @@ export default function Dashboard() {
 
         {/* 快捷入口 */}
         <div className="space-y-4">
-          <Link to="/lesson-plan" className="block p-7 bg-indigo-600 rounded-[32px] text-white shadow-2xl shadow-indigo-200 hover:scale-[1.02] active:scale-[0.98] transition-all group relative overflow-hidden">
-            <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="flex items-center gap-2 mb-3 relative z-10">
-              <div className="p-1.5 bg-white/20 rounded-lg">
-                <Sparkles size={14} className="text-white" />
+          <BorderGlow borderRadius="32px" borderWidth="3px" animationDuration="6s" glowColor="#8b5cf6">
+            <Link to="/lesson-plan" className="block p-7 bg-indigo-600 rounded-[32px] text-white shadow-2xl shadow-indigo-200 group relative overflow-hidden h-full">
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="flex items-center gap-2 mb-3 relative z-10">
+                <div className="p-1.5 bg-white/20 rounded-lg">
+                  <Sparkles size={14} className="text-white" />
+                </div>
+                <span className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em]">智能教研</span>
               </div>
-              <span className="text-[10px] font-black text-white/70 uppercase tracking-[0.2em]">智能教研</span>
-            </div>
-            <p className="text-xl font-black mb-1 relative z-10">立即生成专业教案</p>
-            <p className="text-indigo-100/70 text-xs font-medium leading-relaxed relative z-10">输入曲目，60 秒内生成标准化教学方案</p>
-            <div className="mt-6 flex items-center gap-2 text-xs font-black text-white relative z-10">
-              开始生成 <div className="p-1 bg-white/20 rounded-lg group-hover:translate-x-1 transition-transform"><ArrowRight size={12} strokeWidth={3} /></div>
-            </div>
-          </Link>
+              <p className="text-xl font-black mb-1 relative z-10">立即生成专业教案</p>
+              <p className="text-indigo-100/70 text-xs font-medium leading-relaxed relative z-10">输入曲目，60 秒内生成标准化教学方案</p>
+              <div className="mt-6 flex items-center gap-2 text-xs font-black text-white relative z-10">
+                开始生成 <div className="p-1 bg-white/20 rounded-lg group-hover:translate-x-1 transition-transform"><ArrowRight size={12} strokeWidth={3} /></div>
+              </div>
+            </Link>
+          </BorderGlow>
 
           <button
             onClick={() => {
