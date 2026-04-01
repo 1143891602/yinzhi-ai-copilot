@@ -106,7 +106,7 @@ export default function Students() {
   })
 
   return (
-    <div className="max-w-7xl mx-auto h-full flex gap-6 overflow-hidden">
+    <div className="max-w-7xl mx-auto flex gap-6">
       {/* 左：学生列表 */}
       <div className="w-80 flex flex-col bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="p-4 border-b border-slate-50 space-y-3">

@@ -48,7 +48,7 @@ export default function TeachingResearch() {
   const categories = Array.from(new Set(snippets.map(s => s.category)))
 
   return (
-    <div className="max-w-7xl mx-auto h-full flex flex-col overflow-hidden">
+    <div className="max-w-7xl mx-auto flex flex-col">
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">教研体系管理 (RAG 知识库)</h1>

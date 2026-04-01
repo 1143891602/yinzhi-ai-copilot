@@ -14,12 +14,13 @@ import MyLessons from './pages/MyLessons'
 import { isApiConfigured } from './lib/ai'
 import { AlertCircle, ChevronRight } from 'lucide-react'
 
+// 动画层不再控制任何高度，只负责透明度渐变
 const PageTransition = ({ children }: { children: React.ReactNode }) => (
   <motion.div
-    initial={{ opacity: 0, y: 10 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -10 }}
-    transition={{ duration: 0.2, ease: "easeOut" }}
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    transition={{ duration: 0.2 }}
     className="w-full"
   >
     {children}
@@ -29,19 +30,11 @@ const PageTransition = ({ children }: { children: React.ReactNode }) => (
 function ApiBanner() {
   const location = useLocation()
   const [configured, setConfigured] = useState(isApiConfigured())
-
-  useEffect(() => {
-    setConfigured(isApiConfigured())
-  }, [location.pathname, location.hash])
-
+  useEffect(() => { setConfigured(isApiConfigured()) }, [location.pathname, location.hash])
   if (configured || location.pathname === '/settings' || location.hash === '#/settings') return null
-
   return (
-    <div className="flex items-center justify-between gap-3 px-6 py-2 bg-amber-50 border-b border-amber-200">
-      <div className="flex items-center gap-2">
-        <AlertCircle size={14} className="text-amber-500" />
-        <p className="text-[11px] text-amber-700 font-bold">AI 未配置</p>
-      </div>
+    <div className="flex items-center justify-between px-6 py-2 bg-amber-50 border-b border-amber-200">
+      <p className="text-[11px] text-amber-700 font-bold">AI 功能未配置</p>
       <Link to="/settings" className="text-[10px] font-bold px-3 py-1 bg-amber-500 text-white rounded-lg">去配置</Link>
     </div>
   )
@@ -51,20 +44,20 @@ export default function App() {
   const location = useLocation()
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans selection:bg-indigo-100 flex">
-      {/* 1. 侧边栏：固定在左侧，不随页面滚动 */}
-      <div className="fixed top-0 left-0 bottom-0 w-64 z-50">
+    <div className="min-h-screen bg-slate-50">
+      {/* 1. 侧边栏：彻底固定，不随页面动 */}
+      <div className="fixed top-0 left-0 bottom-0 w-64 z-50 bg-slate-950">
         <Sidebar />
       </div>
       
-      {/* 2. 主内容区：由浏览器原生 Body 负责滚动，宽度避开侧边栏 */}
-      <div className="flex-1 ml-64 flex flex-col min-h-screen relative">
-        <div className="sticky top-0 z-40">
+      {/* 2. 主内容区：避开左边 64px 即可，由 Body 自动滚动 */}
+      <div className="pl-64 min-h-screen flex flex-col">
+        <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200">
           <Header />
           <ApiBanner />
         </div>
         
-        <main className="flex-1 p-8">
+        <main className="p-8 pb-20">
           <AnimatePresence mode="wait">
             <Routes location={location} key={location.pathname}>
               <Route path="/" element={<PageTransition><Dashboard /></PageTransition>} />
