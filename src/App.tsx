@@ -18,9 +18,9 @@ function ApiBanner() {
 
   useEffect(() => {
     setConfigured(isApiConfigured())
-  }, [location.pathname])
+  }, [location.pathname, location.hash])
 
-  if (configured || location.pathname === '/settings') return null
+  if (configured || location.pathname === '/settings' || location.hash === '#/settings') return null
 
   return (
     <div className="flex items-center justify-between gap-3 px-6 py-2.5 bg-amber-50 border-b border-amber-200">

@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Trash2, RotateCcw, FileText, Clock, Music } from 'lucide-react'
+import { Search, Trash2, RotateCcw, FileText, Clock, Music, ChevronRight, Download, Check, Sparkles, X, Plus } from 'lucide-react'
 import { getLessons, deleteLesson, type SavedLesson } from '@/lib/lessonStorage'
 import { cn } from '@/lib/utils'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
 const SUBJECTS = ['全部', '钢琴', '声乐', '古筝', '小提琴', '吉他', '乐理']
 
@@ -35,6 +37,8 @@ export default function MyLessons() {
   const [query, setQuery] = useState('')
   const [subject, setSubject] = useState('全部')
   const [preview, setPreview] = useState<SavedLesson | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const previewRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setLessons(getLessons())
@@ -42,169 +46,179 @@ export default function MyLessons() {
 
   function handleDelete(id: string, e: React.MouseEvent) {
     e.stopPropagation()
-    deleteLesson(id)
-    setLessons(getLessons())
-    if (preview?.id === id) setPreview(null)
+    if (confirm('确定要删除这篇教案吗？')) {
+      deleteLesson(id)
+      setLessons(getLessons())
+      if (preview?.id === id) setPreview(null)
+    }
   }
 
   function handleReuse(lesson: SavedLesson) {
-    // 跳转教案生成页并带上复用参数
-    navigate(`/lesson-plan?reuse=${encodeURIComponent(JSON.stringify({
-      subject: lesson.subject,
-      title: lesson.title,
-      level: lesson.level,
-    }))}`)
+    navigate(`/lesson-plan?topic=${encodeURIComponent(lesson.title)}&instrument=${encodeURIComponent(lesson.subject)}&level=${encodeURIComponent(lesson.level)}`)
+  }
+
+  async function handleExport() {
+    if (!preview || !previewRef.current) return
+    setExporting(true)
+    try {
+      const canvas = await html2canvas(previewRef.current, { scale: 2, useCORS: true })
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const imgWidth = 210
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight)
+      pdf.save(`音智AI教案_${preview.title}.pdf`)
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setExporting(false)
+    }
   }
 
   const filtered = lessons.filter(l => {
-    const matchQuery = l.title.includes(query) || l.subject.includes(query)
+    const matchQuery = l.title.includes(query)
     const matchSubject = subject === '全部' || l.subject === subject
     return matchQuery && matchSubject
   })
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div>
-        <p className="text-xs font-semibold text-indigo-500 mb-1 tracking-widest uppercase">My Lessons</p>
-        <h1 className="text-2xl font-bold text-slate-900">我的教案库</h1>
-        <p className="mt-1 text-slate-500 text-sm">所有已保存的教案，支持一键复用重新生成。</p>
-      </div>
-
-      <div className="flex gap-6" style={{ minHeight: 'calc(100vh - 220px)' }}>
-        {/* 左：列表 */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
-          {/* 搜索 + 筛选 */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="搜索教案名称..."
-                className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20"
-              />
-            </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {SUBJECTS.map(s => (
-                <button
-                  key={s}
-                  onClick={() => setSubject(s)}
-                  className={cn(
-                    'px-3 py-2 rounded-xl text-xs font-semibold transition-all',
-                    subject === s ? 'bg-indigo-600 text-white' : 'bg-white border border-slate-200 text-slate-500 hover:border-indigo-300'
-                  )}
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
+    <div className="max-w-7xl mx-auto h-[calc(100vh-7rem)] flex gap-6">
+      {/* 左：列表 */}
+      <div className="w-[450px] flex flex-col bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="p-5 border-b border-slate-50 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-slate-800">教案库 ({lessons.length})</h2>
+            <button onClick={() => navigate('/lesson-plan')} className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors">
+              <Plus size={18} />
+            </button>
           </div>
-
-          {/* 统计 */}
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <FileText size={12} />
-            共 <span className="font-bold text-slate-600">{filtered.length}</span> 份教案
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+            <input
+              type="text"
+              placeholder="搜索教案标题..."
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20"
+            />
           </div>
+          <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {SUBJECTS.map(s => (
+              <button
+                key={s}
+                onClick={() => setSubject(s)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all",
+                  subject === s ? "bg-indigo-600 text-white shadow-md shadow-indigo-100" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                )}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {/* 列表 */}
-          {filtered.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center py-20">
-              <div className="text-5xl mb-4">📄</div>
-              <p className="text-sm font-semibold text-slate-400">
-                {lessons.length === 0 ? '还没有保存过教案' : '没有找到匹配的教案'}
-              </p>
-              {lessons.length === 0 && (
-                <button
-                  onClick={() => navigate('/lesson-plan')}
-                  className="mt-4 px-4 py-2 bg-indigo-600 text-white text-xs font-bold rounded-xl hover:bg-indigo-700 transition-all"
-                >
-                  去生成第一份教案
-                </button>
+        <div className="flex-1 overflow-y-auto p-3 space-y-2">
+          {filtered.map(l => (
+            <button
+              key={l.id}
+              onClick={() => setPreview(l)}
+              className={cn(
+                "w-full text-left p-4 rounded-2xl transition-all group",
+                preview?.id === l.id ? "bg-indigo-50/80 ring-1 ring-indigo-100 shadow-sm" : "hover:bg-slate-50"
               )}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {filtered.map(lesson => (
-                <div
-                  key={lesson.id}
-                  onClick={() => setPreview(lesson)}
-                  className={cn(
-                    'p-4 bg-white rounded-2xl border cursor-pointer transition-all',
-                    preview?.id === lesson.id
-                      ? 'border-indigo-300 shadow-md ring-2 ring-indigo-500/10'
-                      : 'border-slate-100 hover:border-slate-200 hover:shadow-sm'
-                  )}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className={cn('text-xs font-bold px-2 py-0.5 rounded-lg', subjectColors[lesson.subject] || 'text-slate-600 bg-slate-100')}>
-                          <Music size={9} className="inline mr-1" />{lesson.subject}
-                        </span>
-                        <span className="text-xs text-slate-400">{lesson.level}</span>
-                      </div>
-                      <p className="text-sm font-bold text-slate-800 truncate">{lesson.title}</p>
-                      <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-400">
-                        <span className="flex items-center gap-1"><Clock size={10} />{formatDate(lesson.createdAt)}</span>
-                        <span>{lesson.duration}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        onClick={e => { e.stopPropagation(); handleReuse(lesson) }}
-                        className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-all"
-                      >
-                        <RotateCcw size={11} /> 复用
-                      </button>
-                      <button
-                        onClick={e => handleDelete(lesson.id, e)}
-                        className="p-1.5 text-slate-300 hover:text-red-400 hover:bg-red-50 rounded-lg transition-all"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
+            >
+              <div className="flex items-start justify-between mb-2">
+                <span className={cn("text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider", subjectColors[l.subject] || 'bg-slate-100 text-slate-500')}>
+                  {l.subject}
+                </span>
+                <span className="flex items-center gap-1 text-[10px] text-slate-400 font-medium">
+                  <Clock size={10} /> {formatDate(l.createdAt)}
+                </span>
+              </div>
+              <h3 className="font-bold text-slate-800 text-sm mb-3 line-clamp-1">{l.title}</h3>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                  <span>{l.level}</span>
+                  <span>·</span>
+                  <span>{l.duration}</span>
                 </div>
-              ))}
+                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={(e) => handleDelete(l.id, e)} className="p-1.5 text-slate-300 hover:text-rose-500"><Trash2 size={14} /></button>
+                  <ChevronRight size={14} className="text-slate-300" />
+                </div>
+              </div>
+            </button>
+          ))}
+          {filtered.length === 0 && (
+            <div className="py-20 text-center opacity-40">
+              <FileText size={40} className="mx-auto text-slate-200 mb-3" />
+              <p className="text-sm font-medium text-slate-400">教案库空空如也</p>
             </div>
           )}
         </div>
+      </div>
 
-        {/* 右：预览 */}
+      {/* 右：预览区 */}
+      <div className="flex-1 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
         {preview ? (
-          <div className="w-80 shrink-0 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
-            <div className="px-5 py-4 border-b border-slate-50">
-              <span className={cn('text-xs font-bold px-2 py-0.5 rounded-lg', subjectColors[preview.subject] || 'text-slate-600 bg-slate-100')}>
-                {preview.subject}
-              </span>
-              <h3 className="text-sm font-bold text-slate-800 mt-2">{preview.title}</h3>
-              <p className="text-xs text-slate-400 mt-1">{preview.level} · {preview.duration} · {formatDate(preview.createdAt)}</p>
+          <>
+            <div className="px-8 py-5 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-indigo-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100">
+                  <FileText size={20} />
+                </div>
+                <div>
+                  <h2 className="font-bold text-slate-900 text-base">{preview.title}</h2>
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">
+                    创建于 {new Date(preview.createdAt).toLocaleString()} · {preview.subject} · {preview.level}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => handleReuse(preview)}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-xs font-bold transition-all"
+                >
+                  <RotateCcw size={14} /> 重新生成
+                </button>
+                <button 
+                  onClick={handleExport}
+                  disabled={exporting}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-100 disabled:opacity-50"
+                >
+                  {exporting ? <Clock size={14} className="animate-spin" /> : <Download size={14} />}
+                  导出 PDF
+                </button>
+              </div>
             </div>
-            <div className="flex-1 p-5 overflow-y-auto text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
-              {preview.content.slice(0, 800)}{preview.content.length > 800 ? '...' : ''}
-            </div>
-            <div className="px-5 py-4 border-t border-slate-50 flex gap-2">
-              <button
-                onClick={() => handleReuse(preview)}
-                className="flex-1 py-2.5 text-xs font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all"
+
+            <div className="flex-1 overflow-y-auto p-12 bg-slate-50/50">
+              <div 
+                ref={previewRef}
+                className="bg-white rounded-xl shadow-sm border border-slate-100 p-12 min-h-full prose prose-slate max-w-none"
               >
-                一键复用
-              </button>
-              <button
-                onClick={e => handleDelete(preview.id, e)}
-                className="px-3 py-2.5 text-xs font-bold text-slate-400 bg-slate-100 rounded-xl hover:bg-red-50 hover:text-red-400 transition-all"
-              >
-                <Trash2 size={13} />
-              </button>
+                <div 
+                  className="markdown-content text-sm leading-relaxed"
+                  dangerouslySetInnerHTML={{ 
+                    __html: preview.content
+                      .replace(/# (.*)/g, '<h1 class="text-2xl font-bold mb-6 text-slate-900">$1</h1>')
+                      .replace(/## (.*)/g, '<h2 class="text-lg font-bold mt-8 mb-4 text-slate-800 border-l-4 border-indigo-500 pl-3">$1</h2>')
+                      .replace(/\n/g, '<br/>') 
+                  }}
+                />
+              </div>
             </div>
-          </div>
+          </>
         ) : (
-          <div className="w-80 shrink-0 bg-white rounded-2xl border border-dashed border-slate-200 flex items-center justify-center text-center p-8">
-            <div>
-              <div className="text-4xl mb-3">📋</div>
-              <p className="text-sm font-semibold text-slate-400">点击左侧教案</p>
-              <p className="text-xs text-slate-300 mt-1">预览内容</p>
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
+            <div className="w-20 h-20 bg-slate-50 rounded-3xl flex items-center justify-center mb-6">
+              <Search size={32} className="text-slate-200" />
             </div>
+            <h3 className="text-xl font-bold text-slate-800 mb-2">选择一份教案预览</h3>
+            <p className="text-sm text-slate-400 max-w-xs leading-relaxed">
+              点击左侧列表中的教案，可以快速预览全文内容、重新编辑或导出为标准 PDF 格式。
+            </p>
           </div>
         )}
       </div>

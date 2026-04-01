@@ -1,28 +1,37 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Sparkles, Copy, Check, RefreshCw, Users } from 'lucide-react'
+import { Sparkles, Copy, Check, RefreshCw, Users, Heart, ShieldCheck, Zap } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { streamChat } from '@/lib/ai'
-import { STUDENTS, getStudentTags } from '@/lib/studentsData'
+import { getStudents, getStudentTags } from '@/lib/studentsData'
+
+type Style = 'warm' | 'professional' | 'concise'
+
+const STYLES: { id: Style; name: string; icon: any; color: string; desc: string }[] = [
+  { id: 'warm', name: '温情鼓励', icon: Heart, color: 'text-rose-500 bg-rose-50', desc: '语气亲切，多用表情包，侧重夸奖进步' },
+  { id: 'professional', name: '专业严谨', icon: ShieldCheck, color: 'text-indigo-500 bg-indigo-50', desc: '术语规范，侧重指法、节奏等客观评价' },
+  { id: 'concise', name: '简洁高效', icon: Zap, color: 'text-amber-500 bg-amber-50', desc: '100字以内，重点突出，适合微信快速预览' },
+]
 
 export default function Communication() {
   const [searchParams] = useSearchParams()
-  const [selected, setSelected] = useState<typeof STUDENTS[0] | null>(null)
+  const students = getStudents()
+  const [selected, setSelected] = useState<typeof students[0] | null>(null)
   const [keywords, setKeywords] = useState('')
   const [generating, setGenerating] = useState(false)
   const [result, setResult] = useState('')
   const [copied, setCopied] = useState(false)
   const [fromStudent, setFromStudent] = useState(false)
+  const [style, setStyle] = useState<Style>('warm')
 
   useEffect(() => {
     const studentId = searchParams.get('studentId')
     const kw = searchParams.get('keywords')
     if (studentId) {
-      const found = STUDENTS.find(s => s.id === Number(studentId))
+      const found = students.find(s => s.id === Number(studentId))
       if (found) {
         setSelected(found)
         setFromStudent(true)
-        // 优先用 URL 里的 keywords（来自标签），没有则读标签
         if (kw) {
           setKeywords(decodeURIComponent(kw))
         } else {
@@ -41,7 +50,13 @@ export default function Communication() {
     const tags = getStudentTags(selected.id)
     const tagLine = tags.length ? `\n学生特点标签：${tags.join('、')}` : ''
 
-    const prompt = `你是一名温情、专业的音乐教师助手。
+    const stylePrompts = {
+      warm: '你是一位非常有爱心、善于发现孩子闪光点的音乐老师。请写一段充满鼓励、亲切且带有一些可爱表情包的课后评价。',
+      professional: '你是一位严谨、专业的资深教研总监。请使用音乐专业术语，对孩子的课堂表现进行客观、深度且条理清晰的评价。',
+      concise: '你是一位高效、直接的老师。请用 100 字以内的短句，快速概括孩子本次课堂的重点和需要改进的地方，适合家长在微信预览。'
+    }
+
+    const prompt = `${stylePrompts[style]}
 请根据以下信息，生成一段发给家长的课后反馈文案。
 
 学生姓名：${selected.name}
@@ -50,108 +65,89 @@ export default function Communication() {
 本次课堂关键词：${keywords || '上课认真，有进步'}${tagLine}
 
 要求：
-- 语气温情、鼓励、专业
-- 使用 emoji 增加亲切感
-- 包含：课堂亮点 / 改进方向 / 本周练习任务 三个部分
-- 控制在 200 字以内，适合家长直接阅读
-- 直接输出文案，不要有任何前言`
+1. 直接输出文案内容，不要前言和结语。
+2. 包含：本节课亮点、待提升点、回家练习建议。
+3. 结构清晰，排版精美。`
 
-    try {
-      await streamChat(
-        [{ role: 'user', content: prompt }],
-        (chunk) => setResult((prev) => prev + chunk),
-        () => setGenerating(false)
-      )
-    } catch (e) {
-      console.error(e)
-      setGenerating(false)
-    }
+    await streamChat(
+      [{ role: 'user', content: prompt }],
+      (chunk) => {
+        setResult(prev => prev + chunk)
+      },
+      () => setGenerating(false)
+    )
   }
 
-  const copy = () => {
+  function handleCopy() {
     navigator.clipboard.writeText(result)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const quickTags = ['专注度高', '基本功扎实', '乐感极佳', '需多练习', '进步明显', '节奏感待加强']
-
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">智能家校沟通</h1>
-          <p className="mt-1 text-slate-500 text-sm">输入简单关键词，AI 自动生成专业、温情的课后反馈文案，一键复制发送给家长。</p>
-        </div>
-        {fromStudent && selected && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-700">
-            <Users size={13} />
-            <span>已从学生档案导入：<strong>{selected.name}</strong> 的表现标签</span>
-          </div>
-        )}
+    <div className="max-w-7xl mx-auto flex flex-col h-[calc(100vh-7rem)]">
+      <div className="mb-6">
+        <p className="text-xs font-semibold text-indigo-500 mb-1 tracking-widest uppercase">Communication</p>
+        <h1 className="text-2xl font-bold text-slate-900">智能家校沟通</h1>
+        <p className="mt-1 text-slate-500 text-sm">选择学员，AI 自动生成专业、有温度的课后反馈，提升家长满意度。</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 左侧输入 */}
-        <div className="space-y-4">
-          {/* Step 1 选学生 */}
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
-            <p className="text-xs font-bold text-slate-500">STEP 1 · 选择学生</p>
-            <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-              {STUDENTS.filter(s => s.status === 'active').map((s) => (
-                <div
-                  key={s.id}
-                  onClick={() => {
-                    setSelected(s)
-                    setFromStudent(false)
+      <div className="flex-1 flex gap-6 overflow-hidden">
+        {/* 左：配置区 */}
+        <div className="w-80 space-y-4 flex flex-col">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                <Users size={13} /> 选择学员
+              </label>
+              <select
+                value={selected?.id || ''}
+                onChange={e => {
+                  const s = students.find(s => s.id === Number(e.target.value))
+                  setSelected(s || null)
+                  if (s) {
                     const tags = getStudentTags(s.id)
-                    if (tags.length && !keywords) setKeywords(tags.join('、'))
-                  }}
-                  className={cn(
-                    'flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all',
-                    selected?.id === s.id
-                      ? 'border-indigo-500 bg-indigo-50 ring-2 ring-indigo-500/10'
-                      : 'border-slate-100 hover:border-slate-200 hover:bg-slate-50'
-                  )}
-                >
-                  <div className={cn(
-                    'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0',
-                    selected?.id === s.id ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
-                  )}>
-                    {s.name[0]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-800">{s.name}</p>
-                    <p className="text-xs text-slate-400">{s.instrument} · {s.level}</p>
-                  </div>
-                  {getStudentTags(s.id).length > 0 && (
-                    <span className="text-xs text-indigo-400 bg-indigo-50 px-2 py-0.5 rounded-full shrink-0">
-                      {getStudentTags(s.id).length} 个标签
-                    </span>
-                  )}
-                  <Check size={16} className={cn('text-indigo-600 transition-all shrink-0', selected?.id === s.id ? 'opacity-100' : 'opacity-0')} />
-                </div>
-              ))}
+                    setKeywords(tags.join('、'))
+                  }
+                }}
+                className="w-full appearance-none bg-slate-50 border-none rounded-xl px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20"
+              >
+                <option value="">点击选择学生</option>
+                {students.map(s => <option key={s.id} value={s.id}>{s.name} ({s.instrument})</option>)}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-500">本节课表现关键词</label>
+              <textarea
+                value={keywords}
+                onChange={e => setKeywords(e.target.value)}
+                placeholder="如：识谱快、错音较多、节奏稳..."
+                rows={3}
+                className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
+              />
             </div>
           </div>
 
-          {/* Step 2 关键词 */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-3">
-            <p className="text-xs font-bold text-slate-500">STEP 2 · 输入课堂关键词</p>
-            <textarea
-              value={keywords}
-              onChange={(e) => setKeywords(e.target.value)}
-              placeholder="例如：左手力度控制进步大、十六分音符仍需加强、专注度高..."
-              className="w-full h-24 p-3 bg-slate-50 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 resize-none"
-            />
-            <div className="flex flex-wrap gap-2">
-              {quickTags.map((tag) => (
+            <label className="text-xs font-bold text-slate-500">评价风格</label>
+            <div className="space-y-2">
+              {STYLES.map(s => (
                 <button
-                  key={tag}
-                  onClick={() => setKeywords((prev) => prev ? prev + '、' + tag : tag)}
-                  className="px-3 py-1 bg-slate-100 text-xs font-medium text-slate-600 rounded-full hover:bg-indigo-100 hover:text-indigo-700 transition-all"
+                  key={s.id}
+                  onClick={() => setStyle(s.id)}
+                  className={cn(
+                    "w-full flex items-start gap-3 p-3 rounded-xl transition-all text-left group",
+                    style === s.id ? "bg-indigo-50 ring-1 ring-indigo-100" : "hover:bg-slate-50"
+                  )}
                 >
-                  {tag}
+                  <div className={cn("mt-0.5 p-2 rounded-lg transition-all", style === s.id ? s.color : "bg-slate-100 text-slate-400 group-hover:bg-slate-200")}>
+                    <s.icon size={16} />
+                  </div>
+                  <div>
+                    <p className={cn("text-xs font-bold", style === s.id ? "text-indigo-600" : "text-slate-600")}>{s.name}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">{s.desc}</p>
+                  </div>
                 </button>
               ))}
             </div>
@@ -160,74 +156,47 @@ export default function Communication() {
           <button
             onClick={generate}
             disabled={!selected || generating}
-            className={cn(
-              'w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl font-bold text-white text-sm transition-all shadow-lg',
-              !selected || generating
-                ? 'bg-slate-300 cursor-not-allowed shadow-none'
-                : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-indigo-100'
-            )}
+            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-100"
           >
-            {generating ? <><RefreshCw size={15} className="animate-spin" /> AI 正在润色文案...</> : <><Sparkles size={15} /> 生成专业反馈文案</>}
+            {generating ? <RefreshCw size={18} className="animate-spin" /> : <Sparkles size={18} />}
+            {generating ? '正在构思反馈文案...' : '生成课后评价'}
           </button>
         </div>
 
-        {/* 右侧结果 */}
-        <div className="bg-slate-900 rounded-2xl p-5 flex flex-col relative overflow-hidden" style={{ minHeight: 480 }}>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl rounded-full" />
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 blur-3xl rounded-full" />
-
-          <div className="relative flex-1 flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-                <span className="text-xs font-bold text-indigo-400 tracking-widest uppercase">AI 生成文案</span>
-              </div>
-              {result && (
-                <button
-                  onClick={copy}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 text-slate-300 rounded-xl hover:bg-indigo-600 hover:text-white transition-all text-xs font-bold"
-                >
-                  {copied ? <Check size={12} /> : <Copy size={12} />}
-                  {copied ? '已复制' : '复制全文'}
-                </button>
-              )}
+        {/* 右：输出区 */}
+        <div className="flex-1 bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-slate-50">
+            <div className="flex items-center gap-2">
+              <div className={cn("w-2 h-2 rounded-full", generating ? "bg-amber-400 animate-pulse" : result ? "bg-emerald-400" : "bg-slate-200")} />
+              <span className="text-sm font-bold text-slate-800">
+                {generating ? 'AI 正在生成...' : result ? '反馈文案已生成' : '等待生成...'}
+              </span>
             </div>
-
-            <div className="flex-1 bg-white/5 rounded-2xl p-5 overflow-y-auto">
-              {!result && !generating && (
-                <div className="h-full flex flex-col items-center justify-center text-center text-slate-500">
-                  <div className="text-4xl mb-3">✍️</div>
-                  <p className="text-slate-300 font-semibold text-sm">准备就绪</p>
-                  <p className="text-xs mt-1 leading-relaxed">选择学生并输入关键词，AI 将在此生成温情专业的家校沟通文案。</p>
-                </div>
-              )}
-              {generating && !result && (
-                <div className="space-y-3 animate-pulse">
-                  <div className="h-4 bg-white/10 rounded-full w-3/4" />
-                  <div className="h-4 bg-white/10 rounded-full w-1/2" />
-                  <div className="h-4 bg-white/10 rounded-full w-5/6" />
-                  <div className="h-24 bg-white/5 rounded-xl mt-4" />
-                  <div className="h-4 bg-white/10 rounded-full w-2/3" />
-                  <div className="h-4 bg-white/10 rounded-full w-4/5" />
-                </div>
-              )}
-              {result && (
-                <pre className="text-slate-200 text-sm leading-relaxed whitespace-pre-wrap font-sans">
-                  {result}
-                  {generating && <span className="inline-block w-0.5 h-4 bg-indigo-400 animate-pulse ml-0.5 align-middle" />}
-                </pre>
-              )}
-            </div>
-
-            <div className="mt-4 flex items-center justify-between p-3 bg-indigo-500/10 rounded-xl border border-indigo-500/20">
-              <span className="text-xs text-indigo-300">💝 以温情、鼓励、专业语气生成</span>
+            {result && (
               <button
-                onClick={() => { setResult(''); setKeywords('') }}
-                className="text-xs font-bold text-indigo-400 hover:text-indigo-200 transition-all"
+                onClick={handleCopy}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 transition-colors"
               >
-                重置
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+                {copied ? '已复制' : '复制文案'}
               </button>
-            </div>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-8 relative">
+            {result ? (
+              <div className="prose prose-slate max-w-none prose-sm">
+                <div className="whitespace-pre-wrap font-sans text-slate-700 leading-relaxed text-sm">
+                  {result}
+                  {generating && <span className="inline-block w-0.5 h-4 bg-indigo-500 animate-pulse ml-0.5 align-middle" />}
+                </div>
+              </div>
+            ) : (
+              <div className="h-full flex flex-col items-center justify-center text-center opacity-40">
+                <Sparkles size={48} className="text-slate-200 mb-4" />
+                <p className="text-sm font-medium text-slate-400">配置左侧信息后，点击“生成评价”</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

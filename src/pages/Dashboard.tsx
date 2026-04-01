@@ -5,7 +5,7 @@ import {
   ResponsiveContainer, BarChart, Bar
 } from 'recharts'
 import { getLessons } from '@/lib/lessonStorage'
-import { STUDENTS } from '@/lib/studentsData'
+import { getStudents, type Student } from '@/lib/studentsData'
 
 const areaData = [
   { name: '1月', 教案数: 52 },
@@ -39,11 +39,12 @@ const avatarColors = ['bg-blue-500', 'bg-purple-500', 'bg-emerald-500', 'bg-oran
 export default function Dashboard() {
   const navigate = useNavigate()
   const lessons = getLessons()
-  const activeStudents = STUDENTS.filter(s => s.status === 'active').length
+  const allStudents = getStudents()
+  const activeStudents = allStudents.filter((s: Student) => s.status === 'active').length
 
   const stats = [
     { name: '已保存教案数', value: String(lessons.length || 0), change: lessons.length > 0 ? `最近：${formatAgo(lessons[0]?.createdAt)}` : '暂无教案', up: true, icon: FilePlus, iconColor: 'text-blue-600', bg: 'bg-blue-50' },
-    { name: '在读学生总数', value: String(activeStudents), change: `共 ${STUDENTS.length} 人`, up: true, icon: Users, iconColor: 'text-emerald-600', bg: 'bg-emerald-50' },
+    { name: '在读学生总数', value: String(activeStudents), change: `共 ${allStudents.length} 人`, up: true, icon: Users, iconColor: 'text-emerald-600', bg: 'bg-emerald-50' },
     { name: '服务机构数', value: '45', change: '+3 家', up: true, icon: Users, iconColor: 'text-purple-600', bg: 'bg-purple-50' },
     { name: '效率综合提升', value: '42%', change: '↑ 5% vs 上周', up: true, icon: TrendingUp, iconColor: 'text-orange-600', bg: 'bg-orange-50' },
   ]
@@ -198,7 +199,7 @@ export default function Dashboard() {
           <button
             onClick={() => {
               // 带最近活跃学生跳转家校沟通
-              const recent = STUDENTS.find(s => s.status === 'active')
+              const recent = allStudents.find((s: Student) => s.status === 'active')
               if (recent) navigate(`/communication?studentId=${recent.id}`)
               else navigate('/communication')
             }}
