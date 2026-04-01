@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CheckCircle, XCircle, Loader2, Wifi, Key, Link, Cpu, AlertTriangle, ExternalLink } from 'lucide-react'
+import { CheckCircle, XCircle, Loader2, Wifi, Key, Link, Cpu, AlertTriangle, ExternalLink, Download, UploadCloud, ShieldCheck } from 'lucide-react'
 import { getApiConfig, saveApiConfig, testApiConnection, type ApiConfig } from '@/lib/ai'
 import { cn } from '@/lib/utils'
 
@@ -47,6 +47,47 @@ export default function Settings() {
     saveApiConfig(config)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  function handleExportData() {
+    const data = {
+      yinzhi_api_config: localStorage.getItem('yinzhi_api_config'),
+      yinzhi_lessons: localStorage.getItem('yinzhi_lessons'),
+      yinzhi_students: localStorage.getItem('yinzhi_students'),
+      yinzhi_student_tags: localStorage.getItem('yinzhi_student_tags'),
+      yinzhi_knowledge: localStorage.getItem('yinzhi_knowledge'),
+      exportDate: new Date().toISOString(),
+      version: '2.0.0'
+    }
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `音智AI_数据备份_${new Date().toLocaleDateString().replace(/\//g, '-')}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleImportData(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!confirm('导入数据将覆盖当前所有教案、学生和设置，确定继续吗？')) return
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const data = JSON.parse(event.target?.result as string)
+        if (data.yinzhi_api_config) localStorage.setItem('yinzhi_api_config', data.yinzhi_api_config)
+        if (data.yinzhi_lessons) localStorage.setItem('yinzhi_lessons', data.yinzhi_lessons)
+        if (data.yinzhi_students) localStorage.setItem('yinzhi_students', data.yinzhi_students)
+        if (data.yinzhi_student_tags) localStorage.setItem('yinzhi_student_tags', data.yinzhi_student_tags)
+        if (data.yinzhi_knowledge) localStorage.setItem('yinzhi_knowledge', data.yinzhi_knowledge)
+        alert('数据导入成功！页面即将刷新以加载新数据。')
+        window.location.reload()
+      } catch (err) {
+        alert('导入失败：文件格式不正确')
+      }
+    }
+    reader.readAsText(file)
   }
 
   const isConfigured = status === 'ok'
@@ -208,6 +249,39 @@ export default function Settings() {
               <ExternalLink size={13} className="text-slate-300 shrink-0 ml-3" />
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* 数据安全与备份 */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6 space-y-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <ShieldCheck size={15} className="text-emerald-500" /> 数据管理与备份
+          </h2>
+          <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-bold">V2.0 安全增强</span>
+        </div>
+        <p className="text-xs text-slate-400">由于本系统完全运行在您的浏览器本地，建议定期备份数据以防浏览器清理缓存导致数据丢失。</p>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <button
+            onClick={handleExportData}
+            className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-100 rounded-2xl hover:border-indigo-200 hover:bg-indigo-50/30 transition-all group"
+          >
+            <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <Download size={20} />
+            </div>
+            <p className="text-sm font-bold text-slate-800">导出数据备份</p>
+            <p className="text-[10px] text-slate-400 mt-1">下载 .json 格式备份文件</p>
+          </button>
+
+          <label className="flex flex-col items-center justify-center p-6 border-2 border-dashed border-slate-100 rounded-2xl hover:border-emerald-200 hover:bg-emerald-50/30 transition-all group cursor-pointer">
+            <input type="file" accept=".json" onChange={handleImportData} className="hidden" />
+            <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+              <UploadCloud size={20} />
+            </div>
+            <p className="text-sm font-bold text-slate-800">导入数据恢复</p>
+            <p className="text-[10px] text-slate-400 mt-1">从备份文件还原所有数据</p>
+          </label>
         </div>
       </div>
 

@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, ChevronRight, Music, Award, Calendar, Phone, Tag, X, Trash2, UserPlus, Check, Users, BookOpen } from 'lucide-react'
+import { Search, Plus, ChevronRight, Music, Award, Calendar, Phone, Tag, X, Trash2, UserPlus, Check, Users, BookOpen, BarChart2, TrendingUp } from 'lucide-react'
+import {
+  Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer
+} from 'recharts'
 import { cn } from '@/lib/utils'
-import { getStudents, saveStudents, addStudent, deleteStudent, type Student } from '@/lib/studentsData'
+import { getStudents, saveStudents, addStudent, deleteStudent, updateStudentScores, type Student } from '@/lib/studentsData'
 
 const TAGS_KEY = 'yinzhi_student_tags'
 function getTagsMap(): Record<number, string[]> {
@@ -38,6 +41,8 @@ export default function Students() {
   const [newStudent, setNewStudent] = useState<Partial<Student>>({
     name: '', instrument: '钢琴', level: '初级', age: 8, phone: '', teacher: '张老师', status: 'active'
   })
+  const [showScoreModal, setShowScoreModal] = useState(false)
+  const [editingScores, setEditingScores] = useState<Student['scores'] | undefined>(undefined)
 
   useEffect(() => {
     setStudents(getStudents())
@@ -62,6 +67,14 @@ export default function Students() {
     setShowAddModal(false)
     setNewStudent({ name: '', instrument: '钢琴', level: '初级', age: 8, phone: '', teacher: '张老师', status: 'active' })
     setSelected(s)
+  }
+
+  function handleUpdateScores() {
+    if (!selected || !editingScores) return
+    updateStudentScores(selected.id, editingScores)
+    setStudents(getStudents())
+    setSelected({ ...selected, scores: editingScores })
+    setShowScoreModal(false)
   }
 
   function handleDeleteStudent(id: number) {
@@ -242,6 +255,56 @@ export default function Students() {
                 </div>
               </div>
 
+              {/* 能力雷达图 */}
+              <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm mb-8 relative group">
+                <button
+                  onClick={() => { setEditingScores(selected.scores!); setShowScoreModal(true) }}
+                  className="absolute top-6 right-6 p-2 bg-slate-50 text-slate-400 hover:text-indigo-600 rounded-xl transition-all opacity-0 group-hover:opacity-100"
+                  title="调整能力评分"
+                >
+                  <BarChart2 size={16} />
+                </button>
+                <h3 className="text-sm font-bold text-slate-800 mb-6 flex items-center gap-2">
+                  <TrendingUp size={16} className="text-indigo-500" /> 学员综合能力雷达
+                </h3>
+                <div className="h-[300px] w-full flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
+                      { subject: '音准', A: selected.scores?.intonation || 50, full: 100 },
+                      { subject: '节奏', A: selected.scores?.rhythm || 50, full: 100 },
+                      { subject: '表现', A: selected.scores?.expression || 50, full: 100 },
+                      { subject: '识谱', A: selected.scores?.reading || 50, full: 100 },
+                      { subject: '勤奋', A: selected.scores?.diligence || 50, full: 100 },
+                    ]}>
+                      <PolarGrid stroke="#e2e8f0" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 12, fontWeight: 'bold' }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                      <Radar
+                        name={selected.name}
+                        dataKey="A"
+                        stroke="#6366f1"
+                        fill="#6366f1"
+                        fillOpacity={0.15}
+                      />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="grid grid-cols-5 gap-4 mt-4 text-center">
+                  {[
+                    { label: '音准', val: selected.scores?.intonation },
+                    { label: '节奏', val: selected.scores?.rhythm },
+                    { label: '表现', val: selected.scores?.expression },
+                    { label: '识谱', val: selected.scores?.reading },
+                    { label: '勤奋', val: selected.scores?.diligence },
+                  ].map(s => (
+                    <div key={s.label}>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">{s.label}</p>
+                      <p className="text-sm font-bold text-slate-700">{s.val}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="space-y-6">
                 <div>
                   <h3 className="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
@@ -409,6 +472,58 @@ export default function Students() {
                 className="flex-1 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Check size={18} /> 确认录入
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 评分调整弹窗 */}
+      {showScoreModal && editingScores && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4 text-slate-800">
+          <div className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between">
+              <h3 className="text-lg font-bold">调整能力评分</h3>
+              <button onClick={() => setShowScoreModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-8 space-y-5">
+              {[
+                { label: '音准 (Intonation)', key: 'intonation' },
+                { label: '节奏 (Rhythm)', key: 'rhythm' },
+                { label: '表现力 (Expression)', key: 'expression' },
+                { label: '识谱 (Reading)', key: 'reading' },
+                { label: '勤奋度 (Diligence)', key: 'diligence' },
+              ].map(item => (
+                <div key={item.key} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-slate-500">{item.label}</label>
+                    <span className="text-xs font-bold text-indigo-600">{(editingScores as any)[item.key]}</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={(editingScores as any)[item.key]}
+                    onChange={e => setEditingScores({ ...editingScores, [item.key]: parseInt(e.target.value) })}
+                    className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="px-8 py-6 bg-slate-50 flex gap-3">
+              <button 
+                onClick={() => setShowScoreModal(false)}
+                className="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition-all text-sm"
+              >
+                取消
+              </button>
+              <button 
+                onClick={handleUpdateScores}
+                className="flex-1 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 text-sm"
+              >
+                保存评分
               </button>
             </div>
           </div>

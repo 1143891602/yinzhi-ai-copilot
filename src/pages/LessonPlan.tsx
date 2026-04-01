@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils'
 import { streamChat } from '@/lib/ai'
 import { saveLesson } from '@/lib/lessonStorage'
+import { getKnowledgeSnippets } from '@/lib/knowledgeStorage'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -155,8 +156,14 @@ export default function LessonPlan() {
     setExporting(false)
   }
 
-  const buildPrompt = (topic: string) =>
-    `你是专业音乐教研专家，为"音智 AI"生成结构化教案。\n\n课程主题：${topic}\n科目：${instrument}\n级别：${level}\n课时：${duration}\n\n请生成完整教案，使用 Markdown 格式，必须包含：\n# 教案标题\n## 一、教学目标\n## 二、重点与难点\n## 三、教学步骤\n## 四、课后练习\n\n直接输出内容，不要前言。`
+  const buildPrompt = (topic: string) => {
+    const snippets = getKnowledgeSnippets().filter(s => s.enabled)
+    const context = snippets.length > 0 
+      ? `\n参考以下机构教研标准：\n${snippets.map(s => `- ${s.title}: ${s.content}`).join('\n')}\n`
+      : ''
+    
+    return `你是专业音乐教研专家，为"音智 AI"生成结构化教案。${context}\n\n课程主题：${topic}\n科目：${instrument}\n级别：${level}\n课时：${duration}\n\n请生成完整教案，使用 Markdown 格式，必须包含：\n# 教案标题\n## 一、教学目标\n## 二、重点与难点\n## 三、教学步骤\n## 四、课后练习\n\n直接输出内容，不要前言。`
+  }
 
   const handleGenerate = async () => {
     if (phase === 'streaming') return
@@ -330,11 +337,13 @@ export default function LessonPlan() {
 
           <div className="bg-slate-900 rounded-2xl p-4 text-white">
             <div className="flex items-center gap-2 mb-2">
-              <GraduationCap size={15} className="text-indigo-400" />
-              <span className="text-xs font-bold text-indigo-300">知识库匹配</span>
+              <Sparkles size={15} className="text-indigo-400" />
+              <span className="text-xs font-bold text-indigo-300">RAG 知识库检索中</span>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed">
-              已自动关联：<span className="text-slate-200">《古典时期触键标准》</span> 与 <span className="text-slate-200">《莫扎特速度标记解析》</span>
+              已自动检索生效知识：<span className="text-slate-200">
+                {getKnowledgeSnippets().filter(s => s.enabled).map(s => `《${s.title}》`).join('、') || '暂无生效教研资料'}
+              </span>
             </p>
           </div>
         </div>
