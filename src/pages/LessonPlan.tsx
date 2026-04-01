@@ -198,7 +198,7 @@ export default function LessonPlan() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto flex flex-col h-[calc(100vh-7rem)]">
+    <div className="max-w-7xl mx-auto flex flex-col h-full overflow-hidden">
       {/* 顶部标题栏 */}
       <div className="flex items-center justify-between mb-6">
         <div>

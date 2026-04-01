@@ -85,7 +85,7 @@ export default function Communication() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto flex flex-col h-[calc(100vh-7rem)]">
+    <div className="max-w-7xl mx-auto flex flex-col h-full overflow-hidden">
       <div className="mb-6">
         <p className="text-xs font-semibold text-indigo-500 mb-1 tracking-widest uppercase">Communication</p>
         <h1 className="text-2xl font-bold text-slate-900">智能家校沟通</h1>

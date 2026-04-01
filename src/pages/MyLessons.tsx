@@ -82,7 +82,7 @@ export default function MyLessons() {
   })
 
   return (
-    <div className="max-w-7xl mx-auto h-[calc(100vh-7rem)] flex gap-6">
+    <div className="max-w-7xl mx-auto h-full flex gap-6 overflow-hidden">
       {/* 左：列表 */}
       <div className="w-[450px] flex flex-col bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="p-5 border-b border-slate-50 space-y-4">
